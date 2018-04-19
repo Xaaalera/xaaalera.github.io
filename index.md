@@ -7,4 +7,4 @@ layout: default
 ** Hello **
 
 
-this is text exemple
+<p>this is text exemple</p>
