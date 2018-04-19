@@ -2,7 +2,7 @@
 title: Hello
 layout: default
 ---
- 
+@import "{{ site.theme }}";
 
 # Hello 
 
