@@ -4,7 +4,7 @@ layout: default
 ---
  
 
-** Hello **
+<h1> Hello </h1>
 
 
 <p>this is text exemple</p>
