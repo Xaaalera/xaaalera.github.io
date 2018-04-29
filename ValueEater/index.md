@@ -26,7 +26,7 @@ layout: default
 
 ``` 
 require_once ('ValueEater/HelpDataWorker.php'); 
- HelpDataWorker::$KEY = 'key';
+HelpDataWorker::$KEY = 'key';
 $roistat = new HelpDataWorker($array); 
 ```
 
