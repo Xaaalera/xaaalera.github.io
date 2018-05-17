@@ -22,9 +22,11 @@ layout: default
 </p>
 <p>
 
+
 ```
 git clone git@github.com:Xaaalera/ValueEater.git
 ```
+
 
 Добавлен файл `config.php` вы можете просто подключать его  и вбивать там свои настройки ,он лежит в корне проекта.
 
