@@ -20,8 +20,6 @@ layout: default
 вписывать туда непонятно что. Т.к Всё находится в бета тестировании
 нет возможности удалить то или иное значение, придется просить меня.
 </p>
-<p>
-
 
 ```
 git clone git@github.com:Xaaalera/ValueEater.git
@@ -30,7 +28,6 @@ git clone git@github.com:Xaaalera/ValueEater.git
 Добавлен файл `config.php` вы можете просто подключать его  и вбивать там свои настройки ,он лежит в корне проекта.
 
 Cоздаём экземпляр класса  ( в файле конфига все это есть)
-</p>
 
 ``` 
 require_once ('ValueEater/HelpDataWorker.php'); 
