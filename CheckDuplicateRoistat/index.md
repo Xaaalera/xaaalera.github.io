@@ -10,9 +10,9 @@ layout: default
 
 <a href="https://github.com/Xaaalera/CheckDublicateRoistat">Репоизиторий</a>
 
-Быстая установка
+Быстрый стат 
 ```
-
+git clone git@github.com:Xaaalera/CheckDublicateRoistat.git
 ```
 
 подключаем класс  -   используется папка ройстат т.к все свои скрипты я ложу именно в эту папку, возможно у вас будет какой то другой путь.
