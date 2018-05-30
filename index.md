@@ -8,7 +8,7 @@ layout: default
 
 
 {% for pagesSite in site.pages %}
-{% if pagesSite.title != page.title %}
+{% if pagesSite.title != page.title and pagesSite.title  != '' %}
 <a href="{{ pagesSite.url }}">{{ pagesSite.title }}</a><br>
 {% endif %}
 {% endfor %}
