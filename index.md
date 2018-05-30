@@ -3,4 +3,8 @@ title: Hello
 layout: default
 ---
 # Hello 
-{{ site.pages }}
+{{  }}
+
+{% for  pagesSite in site.pages %}
+<a href="{{ pagesSite.url }}">{{ page.title }}</a>
+{% endfor %}
