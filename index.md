@@ -2,6 +2,11 @@
 title: Hello
 layout: default
 ---
-# Hello 
 
-1232131
+
+# Hello #
+
+
+{% for pagesSite in site.pages %}
+         <a href="{{ pagesSite.url }}"> {{ pagesSite.title }} </a>
+{% endfor %}
