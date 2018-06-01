@@ -1,5 +1,8 @@
 title: Xaaalera 
 theme: jekyll-theme-cayman
 remote_theme: jekyll-theme-hacker
+paginate: 5
+paginate_path: "/page:num/"
 plugins:
   - jekyll-sitemap
+
