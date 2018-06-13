@@ -57,3 +57,67 @@ php
 $roistatv= isset($_COOKIE['roistat_visit']) ? $_COOKIE['roistat_visit'] : '';
 file_get_contents("https://cloud.roistat.com/api/site/1.0/{PROJECT_ID}/event/register?event=cart_view&visit={$roistatv}&data[page]={$_SERVER['HTTP_REFERER']}&data[domain]={$_SERVER['SERVER_NAME']}");  
 ```
+#### Битрикс ####
+События для инит 
+
+ Корзина
+```
+AddEventHandler('sale', 'OnOrderAdd', 'SendOrderToRoistat');
+function SendOrderToRoistat($ID, $arFields)
+{
+
+}
+```
+Формы 
+``` 
+AddEventHandler('form', 'onBeforeResultAdd', 'SendFormSpecialistToRoistat');
+function SendFormSpecialistToRoistat($WEB_FORM_ID, &$arFields, &$arrVALUES)
+{
+}
+```
+Ещё формы 
+``` 
+AddEventHandler('main', 'OnBeforeEventAdd', 'SendFormToRoistat');
+
+function SendFormToRoistat(&$event, &$lid, &$arFields)
+{
+}
+```
+
+Обновление свойства заказа
+``` 
+AddEventHandler('sale', 'OnOrderAdd', 'SendOrderToRoistat');
+function SendOrderToRoistat($ID, $arFields)
+{
+    AddOrderProperty(29,'Корзина',$orderID);
+}
+function AddOrderProperty($prop_id, $value, $order)
+{
+    if (!strlen($prop_id)) {
+        return false;
+    }
+    if (CModule::IncludeModule('sale')) {
+        if ($arOrderProps = CSaleOrderProps::GetByID($prop_id)) {
+            $db_vals = CSaleOrderPropsValue::GetList(array(),
+                array('ORDER_ID' => $order, 'ORDER_PROPS_ID' => $arOrderProps['ID']));
+            if ($arVals = $db_vals->Fetch()) {
+                return CSaleOrderPropsValue::Update($arVals['ID'], array(
+                    'NAME'           => $arVals['NAME'],
+                    'CODE'           => $arVals['CODE'],
+                    'ORDER_PROPS_ID' => $arVals['ORDER_PROPS_ID'],
+                    'ORDER_ID'       => $arVals['ORDER_ID'],
+                    'VALUE'          => $value,
+                ));
+            } else {
+                return CSaleOrderPropsValue::Add(array(
+                    'NAME'           => $arOrderProps['NAME'],
+                    'CODE'           => $arOrderProps['CODE'],
+                    'ORDER_PROPS_ID' => $arOrderProps['ID'],
+                    'ORDER_ID'       => $order,
+                    'VALUE'          => $value,
+                ));
+            }
+        }
+    }
+}
+```
