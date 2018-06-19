@@ -5,7 +5,7 @@ layout: default
 
 При работе с тильдой иногда надо  спарсить  куки в читабельный вид , вот рабочая функция.
 ``` 
-function parceCookie($string){
+function parseCookie($string){
 $array = explode(';',$string);
 $array2=array();
 $func = function($one){
