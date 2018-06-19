@@ -13,9 +13,13 @@ $func = function($one){
     return $output;
 };
 $array = array_map($func,$array);
-foreach ($array as $values){
-$array2[key($values)] = $values[key($values)];
-}
-retunr $array2;
+$array = explode(';',$string);
+$func = function($one){
+	parse_str(trim($one), $output);
+	return $output;
+};
+$array = array_map($func,$array);
+$array =call_user_func_array('array_merge', $array);
+retunr $array;
 }
 ```
