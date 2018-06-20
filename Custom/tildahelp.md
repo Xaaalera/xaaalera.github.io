@@ -13,6 +13,6 @@ $func = function($one){
 };
 $array = array_map($func,$array);
 $array =call_user_func_array('array_merge', $array);
-retunr $array;
+return $array;
 }
 ```
