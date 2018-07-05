@@ -51,6 +51,43 @@ $( 'selector' ).bind( "mousedown", function(e) {
     roistat.event.send('event', {'domain':location.hostname,'page':location.href});
 });
 ```
+Jivosite
+``` 
+    var userOnMessageSent = window.jivo_onMessageSent;
+    window.jivo_onMessageSent = function () {
+        if (userOnMessageSent) {
+            userOnMessageSent();
+        }
+        roistat.event.send('jivo_firstMessageSent', {'url': document.location.href ,'domain' : location.hostname});
+    };
+    var userOnIntroduction = window.jivo_onIntroduction;
+    window.jivo_onIntroduction = function () {
+        if (userOnIntroduction) {
+            userOnIntroduction();
+        }
+        if (jivo_api.chatMode() === 'offline') {
+            roistat.event.send('jivo_onOfflineMessageSent', {'url': document.location.href, 'domain' : location.hostname});
+        }
+    };
+    var userOnCallStart = window.jivo_onCallStart;
+    window.jivo_onCallStart = function () {
+        if (userOnCallStart) {
+            userOnCallStart();
+        }
+        roistat.event.send('jivo_onCallStart', {'url': document.location.href, 'domain' : location.hostname});
+    };
+```
+ловец лидов
+``` 
+   $(function () {
+        $(document).on('mousedown','.roistat-lh-pulsator-circle',function () {
+            roistat.event.send('click_lead_hunter', {'domain':location.hostname,'page':location.href});
+        });
+        $(document).on('mousedown','.roistat-lh-submit',function () {
+            roistat.event.send('send_lead_hunter', {'domain':location.hostname,'page':location.href});
+        });
+    });
+```
 
 php
 ``` 
