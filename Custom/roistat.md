@@ -35,6 +35,7 @@ file_get_contents("https://cloud.roistat.com/api/proxy/1.0/leads/add?" . http_bu
 ```
 ссылка для просмотра доп инфы <a href="http://help.roistat.com/pages/viewpage.action?pageId=5898354">Roistat</a>
 
+JS помощь <a href="http://help.roistat.com/display/API/JS+API">Полезное API JS</a>
 
 #### События ####
 js
