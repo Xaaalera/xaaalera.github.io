@@ -159,6 +159,13 @@ function AddOrderProperty($prop_id, $value, $order)
     }
 }
 ```
+
+Передача источника
+
+```
+ 'SOURCE_ID': 'Заявка с сайта',
+```
+
 #### Тильда #### 
 
 ``` 
