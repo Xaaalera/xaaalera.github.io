@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Claude Skills: Trust, but Measure</title>
-<meta name="description" content="From a token audit and double-loaded skills to a working eval pipeline: five bugs in my own measuring stick, a 240-agent incident, and the Anthropic best practices I adopted.">
+<title>At the Mountains of Measurement</title>
+<meta name="description" content="The recovered journal of an expedition into skill evaluation: five defects of the measuring instrument, an incident of two hundred and forty agents, and the survivor's protocol.">
 <style>
   :root{
     --paper:#0f191b; --card:#182a2e; --codebg:#0a1315;
@@ -12,6 +12,7 @@
     --teal:#5fd0c0; --teal-soft:#12302d; --stamp:#ff8f7a; --stamp-soft:#3a1f1a;
     --mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
     --sans:-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --serif:Georgia,"Times New Roman",serif;
   }
   html{scroll-behavior:smooth}
   @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
@@ -19,51 +20,41 @@
     background:var(--paper);
     background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
     background-size:32px 32px;
-    color:var(--ink); font-family:var(--sans); line-height:1.65; margin:0;
+    color:var(--ink); font-family:var(--sans); line-height:1.7; margin:0;
   }
   .ruler{height:14px;background:repeating-linear-gradient(90deg,var(--teal) 0 1px,transparent 1px 10px);opacity:.4}
   .wrap{max-width:1060px;margin:40px auto 56px;padding:8px 56px 72px;background:#121e21;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.35)}
-  header{padding:70px 0 44px}
+  header{padding:70px 0 40px}
   .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--teal)}
-  h1{font-size:clamp(32px,4.6vw,50px);line-height:1.1;margin:.35em 0 .3em;letter-spacing:-.015em;text-wrap:balance}
-  .sub{color:var(--ink-soft);font-size:18px;max-width:72ch}
+  h1{font-family:var(--serif);font-size:clamp(34px,4.8vw,54px);line-height:1.08;margin:.35em 0 .3em;letter-spacing:-.01em;text-wrap:balance}
+  .sub{color:var(--ink-soft);font-size:18px;max-width:74ch;font-style:italic}
   .meta{font-family:var(--mono);font-size:13px;color:var(--ink-soft);margin-top:20px;display:flex;gap:26px;flex-wrap:wrap}
-  h2{font-size:26px;margin:2.5em 0 .6em;letter-spacing:-.01em}
-  h2 .idx{font-family:var(--mono);color:var(--teal);font-size:16px;vertical-align:.18em;margin-right:.55em}
+  h2{font-family:var(--serif);font-size:27px;margin:2.6em 0 .6em;letter-spacing:-.005em}
+  h2 .idx{font-family:var(--mono);color:var(--teal);font-size:15px;vertical-align:.25em;margin-right:.55em}
   h3{font-size:18px;margin:1.6em 0 .4em;color:var(--teal)}
-  p{margin:.55em 0;max-width:86ch}
+  p{margin:.6em 0;max-width:86ch}
   a{color:var(--teal)}
+  em{color:var(--ink)}
   code{font-family:var(--mono);font-size:.87em;background:var(--codebg);border:1px solid var(--line);border-radius:4px;padding:.08em .4em}
   pre{background:var(--codebg);border:1px solid var(--line);color:#cfe0dc;border-radius:8px;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13.5px;line-height:1.55;margin:.7em 0 .2em}
   pre code{background:none;border:none;color:inherit;padding:0}
   pre .bad{color:#ff9d8a} pre .good{color:#7fd8c8} pre .dim{color:#6e8a86}
+  .fragment{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin:.9em 0 0}
   table{border-collapse:collapse;width:100%;margin:1em 0;font-size:15px;background:var(--card)}
   th,td{border:1px solid var(--line);padding:9px 14px;text-align:left;vertical-align:top}
   th{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);background:var(--teal-soft)}
   .tablebox{overflow-x:auto}
-  .bug{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:1.7em 0}
-  .bug-head{display:flex;align-items:center;gap:16px;padding:15px 20px;border-bottom:1px solid var(--line)}
-  .bug-no{font-family:var(--mono);font-weight:700;font-size:23px;color:var(--stamp);min-width:2ch}
-  .bug-title{font-weight:700;font-size:18px}
-  .bug-body{padding:6px 20px 16px}
-  .row{display:grid;grid-template-columns:128px 1fr;gap:14px;padding:10px 0;border-bottom:1px dashed var(--line)}
-  .row:last-child{border-bottom:none}
-  .row dt{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);padding-top:2px}
-  .row dd{margin:0;font-size:15.5px}
+  .entry{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:1.7em 0;padding:4px 22px 16px}
+  .entry-date{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--teal);border-bottom:1px solid var(--line);padding:14px 0 10px;margin-bottom:6px}
+  .entry-date .no{color:var(--stamp);font-weight:700;margin-right:.8em}
   .callout{border-left:4px solid var(--teal);background:var(--teal-soft);padding:13px 18px;border-radius:0 8px 8px 0;margin:1.2em 0;font-size:15.5px;max-width:90ch}
   .callout.red{border-color:var(--stamp);background:var(--stamp-soft)}
-  .timeline{list-style:none;margin:1em 0;padding:0;border-left:2px solid var(--teal)}
-  .timeline li{position:relative;padding:6px 0 6px 24px;font-size:15.5px;max-width:84ch}
-  .timeline li::before{content:"";position:absolute;left:-6px;top:14px;width:10px;height:10px;border-radius:50%;background:var(--paper);border:2px solid var(--teal)}
-  .timeline .t{font-family:var(--mono);font-size:12.5px;color:var(--teal);display:inline-block;min-width:6.5ch}
-  .big{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .vignette{font-family:var(--mono);font-size:12px;line-height:1.35;color:var(--ink-soft);text-align:center;white-space:pre;margin:2.6em auto 0;opacity:.75;overflow-x:auto}
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:1.4em 0;max-width:760px}
   .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
   .kpi .v{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--teal)}
   .kpi .v.bad{color:var(--stamp)}
   .kpi .l{font-size:13px;color:var(--ink-soft);margin-top:3px}
-  .stamp{display:inline-block;font-family:var(--mono);font-weight:700;font-size:11.5px;letter-spacing:.14em;padding:3px 10px;border:2px solid currentColor;border-radius:4px;transform:rotate(-2deg)}
-  .stamp.bad{color:var(--stamp);background:var(--stamp-soft)}
   .toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 22px;margin:0 0 8px}
   .toc-t{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);margin-bottom:8px}
   .toc ol{margin:0;padding:0;list-style:none;columns:2;column-gap:36px}
@@ -73,7 +64,7 @@
   .toc .n{font-family:var(--mono);color:var(--teal);margin-right:.6em;font-size:12.5px}
   @media (max-width:640px){.toc ol{columns:1}}
   footer{margin-top:76px;padding-top:20px;border-top:1px solid var(--line);font-family:var(--mono);font-size:13px;color:var(--ink-soft)}
-  @media (max-width:640px){.wrap{margin:12px auto;padding:4px 18px 60px;border-radius:10px}.row{grid-template-columns:1fr}.row dt{padding-top:0}}
+  @media (max-width:640px){.wrap{margin:12px auto;padding:4px 18px 60px;border-radius:10px}}
 </style>
 </head>
 <body>
@@ -82,263 +73,311 @@
 
 <header>
   <div style="margin-bottom:14px"><a href="../" style="font-family:var(--mono);font-size:13px;text-decoration:none">&larr; xaaalera.github.io</a></div>
-  <div class="eyebrow">An engineering saga · July 3–4, 2026</div>
-  <h1>Claude Skills: Trust, but Measure</h1>
-  <p class="sub">It started with an annoying question: "where are my tokens going?" It ended with a working
-  skill-evaluation pipeline built on Anthropic's own tooling, three guard hooks, and five bugs caught in my
-  own measuring stick. With evidence, numbers, and a moral.</p>
+  <div class="eyebrow">A recovered journal · July 3–4, 2026</div>
+  <h1>At the Mountains of Measurement</h1>
+  <p class="sub">Being the true and complete journal of an expedition into the evaluation of Claude skills;
+  of the five defects discovered in the measuring instrument itself; of the incident of the two hundred
+  and forty agents; and of the protocol by which the survivor now lives.</p>
   <div class="meta">
-    <span>5 measuring-stick bugs</span><span>3 guard hooks</span><span>26 querysets</span><span>240 agents in one incident</span>
+    <span>5 defects of the instrument</span><span>3 warding hooks</span><span>26 querysets</span><span>240 agents in a single night</span>
   </div>
 </header>
 
-<nav class="toc"><div class="toc-t">Contents</div><ol>
-<li><a href="#s00"><span class="n">00</span>Glossary — so the rest isn't a slog</a></li>
-<li><a href="#s01"><span class="n">01</span>How it started: "where are my tokens going?"</a></li>
-<li><a href="#s02"><span class="n">02</span>First a bicycle, then — "oh, wow"</a></li>
-<li><a href="#s03"><span class="n">03</span>Side explosion: 240 agents on Opus</a></li>
-<li><a href="#s04"><span class="n">04</span>Hunting the measuring stick: five bugs</a></li>
-<li><a href="#s05"><span class="n">05</span>What an honest stick showed</a></li>
-<li><a href="#s06"><span class="n">06</span>Anthropic best practices I adopted</a></li>
-<li><a href="#s07"><span class="n">07</span>The protocol going forward</a></li>
-<li><a href="#s08"><span class="n">08</span>Timeline at a glance</a></li>
+<nav class="toc"><div class="toc-t">Contents of the manuscript</div><ol>
+<li><a href="#s00"><span class="n">00</span>Foreword of the survivor</a></li>
+<li><a href="#s01"><span class="n">01</span>Editor's note, for those untouched by these arts</a></li>
+<li><a href="#s02"><span class="n">02</span>Day the First: the leak</a></li>
+<li><a href="#s03"><span class="n">03</span>Day the Second: the bicycle, and what Anthropic kept in the vault</a></li>
+<li><a href="#s04"><span class="n">04</span>The incident of the two hundred and forty</a></li>
+<li><a href="#s05"><span class="n">05</span>The five defects: a descent</a></li>
+<li><a href="#s06"><span class="n">06</span>What the honest instrument showed</a></li>
+<li><a href="#s07"><span class="n">07</span>The practices taken from the vault</a></li>
+<li><a href="#s08"><span class="n">08</span>The survivor's protocol</a></li>
 </ol></nav>
 
-<h2 id="s00"><span class="idx">00</span>Glossary — so the rest isn't a slog</h2>
+<h2 id="s00"><span class="idx">00</span>Foreword of the survivor</h2>
+<p>I write this against my better judgment, so that others may be warned of what dwells in the plugin
+cache. The most merciful thing in the world, I have come to believe, is the inability of the human mind
+to correlate all its log files. I have correlated mine. I do not recommend it.</p>
+<p>What follows is my journal, kept over two days, transcribed faithfully and without embellishment of
+the numbers — for the numbers, as you will see, needed none. Every figure herein is exact. Every
+timestamp is real. I have changed nothing, for the horror of this account does not require invention;
+it requires only that you read the entries in order, as I lived them.</p>
+
+<h2 id="s01"><span class="idx">01</span>Editor's note, for those untouched by these arts</h2>
 <div class="tablebox"><table>
   <tr><th>Term</th><th>In plain words</th></tr>
-  <tr><td><b>Skill</b></td><td>An instruction file for Claude: "when doing X, work like this." Each has a <b>description</b> — a couple of sentences the model uses to decide whether to open it.</td></tr>
-  <tr><td><b>Marketplace</b></td><td>A git repository of skills that projects pull them from.</td></tr>
-  <tr><td><b>Triggering</b></td><td>Did the skill fire when needed, and stay silent when not.</td></tr>
-  <tr><td><b>Eval / probe</b></td><td>An automated triggering test: a fresh Claude instance gets one question — we watch whether it reaches for the skill. One probe = one such run.</td></tr>
+  <tr><td><b>Skill</b></td><td>An instruction file for Claude: "when doing X, work like this." Each bears a <b>description</b> — a few sentences by which the model decides whether to open it.</td></tr>
+  <tr><td><b>Marketplace</b></td><td>A git repository of skills from which projects draw them.</td></tr>
+  <tr><td><b>Triggering</b></td><td>Whether the skill fires when needed, and stays silent when not.</td></tr>
+  <tr><td><b>Eval / probe</b></td><td>An automated triggering test: a fresh Claude instance receives one question — we watch whether it reaches for the skill.</td></tr>
   <tr><td><b>Queryset</b></td><td>18 questions per skill: 9 "should fire" + 9 "should stay silent."</td></tr>
-  <tr><td><b>Recall / precision</b></td><td>Recall — doesn't miss what it should catch; precision — doesn't butt in where it shouldn't.</td></tr>
-  <tr><td><b>Held-out test</b></td><td>A slice of questions hidden from the "improver," used as the only judge — protection against teaching to the test.</td></tr>
-  <tr><td><b>Hook</b></td><td>A script the environment runs by itself on events (before a tool call, after a file write) — enforcement instead of self-discipline.</td></tr>
+  <tr><td><b>Recall / precision</b></td><td>Recall — it does not miss what it should catch; precision — it does not intrude where it should not.</td></tr>
+  <tr><td><b>Held-out test</b></td><td>A slice of questions hidden from the "improver" and used as the only judge — a ward against teaching to the test.</td></tr>
+  <tr><td><b>Hook</b></td><td>A script the environment executes by itself upon events — enforcement where discipline fails.</td></tr>
 </table></div>
 
-<h2 id="s01"><span class="idx">01</span>How it started: "where are my tokens going?"</h2>
-<p>There was no plan to "build an eval system." There was an annoying fact: tokens were melting faster
-than seemed reasonable. I went digging, and the audit uncovered a layer cake:</p>
-<ul class="timeline">
-  <li><span class="t">one</span><b>Skills loaded twice.</b> My personal marketplace and the work one are near-mirrors, and the project had both enabled: ~23 skills sat in context as two copies. Every session. Silently. The fix was one line of config; the savings — on every run since.</li>
-  <li><span class="t">two</span><b>CLAUDE.md had bloated.</b> Instruction files that always load: the global one, the project one (~1,500 tokens), plus communication-style rules duplicated in two places at once — double payment every session and version-drift risk.</li>
-  <li><span class="t">three</span><b>40+ skills had piled up — and not one had ever been through an eval.</b> I had built a big skill base, but there was simply nothing to check descriptions with: no tool, no method, not a single measurement.</li>
-</ul>
-<p>Then, the grown-up move: I ran my whole setup against <b>Anthropic's official practices</b> (their
-reference plugin repository) and got a gap list — missing evals being the fattest gap of all. That's how
-the consolidation plan was born: kill the double load, slim down the always-loaded files, add reviewers —
-and <b>learn to measure skills with numbers</b>. This page is about that last, bumpiest item.</p>
+<h2 id="s02"><span class="idx">02</span>Day the First: the leak</h2>
+<p>It began, as these things do, with something small and wrong. My tokens were draining faster than any
+honest arithmetic could explain. I had no plan then — no thought of instruments or expeditions. I only
+wanted to know where they went.</p>
+<p>The audit found three things, each worse than the last:</p>
+<p><b>The skills were loading twice.</b> My personal marketplace and my working one are near-mirrors,
+and the project had both enabled. Some twenty-three skills sat in the context as two copies. Every
+session. Silently. For how long, I cannot say with certainty, and I have chosen not to compute it.</p>
+<p><b>The instruction files had swollen.</b> The always-loaded texts — the global one, the project one
+of some fifteen hundred tokens, and the rules of the house voice duplicated in two places at once — a
+double tribute paid every session to no one in particular.</p>
+<p><b>And the third thing.</b> Forty-odd skills had accumulated in my keeping, and not one — <em>not
+one</em> — had ever been through an evaluation. I had built a library of instructions and never once
+verified that any of them answered when called. There was no tool. There was no method. There was not a
+single measurement. I ran my estate against Anthropic's official practices that evening, and the gap
+list confirmed what I already suspected: I had been keeping a lighthouse without ever checking whether
+the lamp was lit.</p>
+<p>So a plan was drawn: kill the double load, slim the swollen texts, appoint reviewers — and learn, at
+last, to measure. This journal concerns the last item. It proved the longest road.</p>
 
-<h2 id="s02"><span class="idx">02</span>First a bicycle, then — "oh, wow"</h2>
-<p>Being an honest engineer, I naturally started building my own scorer — building it, of course, not
-with my own hands but with a Claude agent's. Remember that division of roles: it will matter later, when
-we hand out the blame. The scorer even worked — and gave every skill exactly 5.0/10. Every one.
-Identically. (Remember this trick: <i>numbers that are too even are a signal</i>.) And here, instead of
-fixing the bicycle further, I stopped and asked the question worth asking before the first line of code:
-<b>doesn't Anthropic already have this?</b></p>
-<p>Oh, wow — they did. A whole pipeline inside their <code>skill-creator</code> plugin that I hadn't even suspected:</p>
-<ul>
-  <li><code>run_eval.py</code> — runs the questions and detects firings;</li>
-  <li><code>run_loop.py</code> — an <b>automatic improvement loop</b>: measure → an LLM rewrites the description based on the misses → re-measure → pick the best version by the held-out test;</li>
-  <li>a methodology: questions must be realistic (paths, typos, laziness), and negatives must be "near-misses" only.</li>
-</ul>
-<div class="callout">
-  <b>The decision:</b> don't rewrite their pipeline and don't finish the bicycle — <b>hybridize</b>. Take
-  Anthropic's loop wholesale and swap exactly one function: their code registers the skill under test as a
-  slash command; I register it as a real skill — the way it lives in production. One substitution, zero
-  forks, upstream updates for free.
+<div class="vignette">
+     ~~~~     ~~~~~     ~~~~
+   ((    ))  ((     )) ((    ))
+        the soundings begin
 </div>
 
-<h2 id="s03"><span class="idx">03</span>Side explosion: 240 agents on Opus</h2>
-<p>In parallel, an incident happened that paid for itself many times over. For a code review I launched
-a multi-agent workflow: "hunters find bugs, skeptics verify every finding." Half an hour later the
-counter read <b class="big">240 agents</b> — all on Opus. Not the most expensive model (that crown
-belongs to Fable), but a pricey one — and here two hundred and forty mouths were burning it at once.</p>
-<ul class="timeline">
-  <li><span class="t">→</span>Each round, the hunters <b>rephrased</b> the same findings — title-based deduplication didn't catch them, and every "new" finding got two more verifiers. A snowball.</li>
-  <li><span class="t">→</span>The stop condition "until findings dry up" <b>never arrives</b> with a creative model — it always invents something.</li>
-  <li><span class="t">→</span>Nobody explicitly set a model for the agents — they all silently inherited the expensive session one.</li>
-</ul>
-<p>Out of the incident came a three-layer system:</p>
+<h2 id="s03"><span class="idx">03</span>Day the Second: the bicycle, and what Anthropic kept in the vault</h2>
+<p>Being an honest engineer, I naturally began by building my own scorer — building it, I should record
+for the tribunal of posterity, not with my own hands but with those of a Claude agent. Remember this
+division of labour. It will matter when the blame is weighed.</p>
+<p>The scorer worked. It returned, for every skill in my keeping, the score of 5.0 out of 10. Every
+skill. Identically. I looked at that column of fives for a long moment, and something in me — the part
+that has read too many logs — whispered: <em>numbers do not come this even in nature.</em></p>
+<p>Instead of fixing the machine further, I stopped and asked the question that should precede the first
+line of any code: <b>does Anthropic not already have this?</b></p>
+<p>They did. Inside their <code>skill-creator</code> plugin, in a vault I had never thought to open, lay
+a complete pipeline: <code>run_eval.py</code>, which runs the questions and detects the firings;
+<code>run_loop.py</code>, an automatic improvement loop — measure, let a model rewrite the description
+from its failures, measure again, and crown the version that wins on the hidden questions; and a
+methodology besides, insisting the questions be realistic and the negatives be near-misses only.</p>
+<div class="callout">
+  <b>The decision of that hour:</b> abandon the bicycle. Take Anthropic's loop whole, and substitute
+  exactly one organ — where their code registers the skill under test as a slash command, mine would
+  register it as a true skill, as it lives in production. One substitution. No fork. Their updates,
+  henceforth, for free.
+</div>
+
+<h2 id="s04"><span class="idx">04</span>The incident of the two hundred and forty</h2>
+<p>I must now record a thing that happened in parallel, and which I did not at first connect to the
+expedition — though it would come to fund its every safeguard.</p>
+<p>For a review of fresh code I had loosed a multi-agent workflow: hunters to find defects, skeptics to
+try each finding. It seemed a modest crew. Half an hour later I looked at the counter and the counter
+said <b>240</b>. Two hundred and forty agents, every one of them running on Opus — not the costliest of
+models, that crown belongs to Fable, but costly enough — and all of them speaking at once, in my name,
+on my account.</p>
+<p>The mechanism, when I dared trace it, was almost beautiful. The hunters, each round, <em>rephrased</em>
+the findings of the previous round; my deduplication, matching on titles, recognized nothing; and to
+every "new" finding the machine dutifully assigned two fresh skeptics. The stopping condition — "until
+no new findings" — assumes a well that runs dry. A creative model is not a well. It is a spring.</p>
+<p>And no one — I checked the scripts twice — no one had told the agents which model to use. So they
+inherited. Silently. All of them. The expensive one.</p>
+<p>From that night came a three-fold ward, which stands to this day:</p>
 <div class="tablebox"><table>
-  <tr><th>Layer</th><th>What it does</th></tr>
-  <tr><td><b>The <code>meta:model-routing</code> skill</b></td><td>A law of tiers: the expensive model only for a few "head" judges and synthesis, the mid-tier for judgment work (review, verification, code reading), the cheap tier for mechanics (greps, renames). Plus a rule: before any mass launch — <b>measure one unit and present a scale table in quota percentages</b>, not money: "this eats a quarter of the window" beats any price tag.</td></tr>
-  <tr><td><b>The guard hook</b></td><td>A check before every agent launch: no explicit model — <span class="stamp bad">BLOCKED</span> with an explanation. Discipline is a consumable; a hook is capital: within its first hour the guard blocked a call from its own creator.</td></tr>
-  <tr><td><b>Agent defaults</b></td><td>Permanent agents get their model pinned in config — every launch is cheap by construction. Along the way it turned out the "docs hunter" sat on a model too weak for its job — bumped it.</td></tr>
+  <tr><th>Ward</th><th>Its office</th></tr>
+  <tr><td><b>The <code>meta:model-routing</code> skill</b></td><td>A law of tiers: the costly model only for a bounded few judges and synthesists; the middle tier for judgment — review, verification, the reading of code; the cheap tier for mechanics. And a rite before any mass launch: measure ONE unit, then lay the full scale before the master of the house as a table of <b>quota percentages</b> — for "this will consume a quarter of the window" carries a truth that no price tag does.</td></tr>
+  <tr><td><b>The guard hook</b></td><td>A sentry that inspects every launching of agents: where no model is named — the launch is refused, with reasons. Discipline, I have learned, is a consumable; a hook is capital. Within its first hour of life the sentry refused a launch by its own maker. I recorded this with satisfaction.</td></tr>
+  <tr><td><b>Pinned defaults</b></td><td>The permanent agents now carry their model in their own configuration, cheap by construction. In passing it was found that the hunter of documents had been given a mind too small for its questions. It has been given a larger one.</td></tr>
 </table></div>
 
-<h2 id="s04"><span class="idx">04</span>Hunting the measuring stick: five bugs</h2>
-<p>Then, a detective story. Every bug masqueraded as "the skills are bad" while the measuring stick was
-the culprit. The catching technique was the same every time: <b>suspiciously even numbers → hand-check
-one case</b>.</p>
+<div class="vignette">
+    .  *   .    .      *
+      the instrument is built
+    it will now begin to lie
+</div>
 
-<div class="bug">
-  <div class="bug-head"><div class="bug-no">#1</div><div class="bug-title">The parser read "&gt;" instead of the description</div></div>
-  <div class="bug-body">
-    <div class="row"><dt>Symptom</dt><dd>Every skill — exactly 5.0/10. The "before → after" line never prints.</dd></div>
-    <div class="row"><dt>False lead</dt><dd>"The descriptions are weak, rewrite them."</dd></div>
-    <div class="row"><dt>Cause</dt><dd>YAML supports "folded" multi-line descriptions (<code>description: &gt;</code> with text below). The agent's parser grabbed only the <code>&gt;</code> character — <b>an entire day was spent measuring empty descriptions</b>. The spicy part: Anthropic's parser handled this from the start; the agent introduced the bug itself while "simplifying" their code.</dd></div>
-    <div class="row"><dt>Fix</dt><dd>Unfold block scalars:
-<pre><code><span class="dim"># before: capture the rest of the line after "description:"</span>
+<h2 id="s05"><span class="idx">05</span>The five defects: a descent</h2>
+<p>What follows is the heart of this manuscript. Five times the instrument lied to me, and five times the
+lie wore the same mask: <em>the skills are bad.</em> They were not. I set down each defect as I met it,
+with the false comfort I clung to, the truth beneath, and the ward now standing. Note the method by which
+each was caught, for it never varied: <b>the numbers were too even, and I went to look at one case with
+my own eyes.</b></p>
+
+<div class="entry">
+  <div class="entry-date"><span class="no">ENTRY I</span>July 4, morning — the parser that read one character</div>
+  <p><b>The manifestation.</b> Every skill: 5.0 of 10. The line comparing old and new descriptions never printed at all.</p>
+  <p><b>The comfortable theory.</b> The descriptions are weak; rewrite them.</p>
+  <p><b>What it was.</b> YAML permits a description folded across many lines, announced by a single
+  character: <code>&gt;</code>. The agent's parser took that character and nothing else. <em>We had spent
+  an entire day measuring empty descriptions.</em> And the detail I record with particular care:
+  Anthropic's own parser handled this correctly from the beginning. The defect was introduced by the
+  agent, in the act of "simplifying" their code.</p>
+  <div class="fragment">recovered fragment · the instrument, before and after</div>
+<pre><code><span class="dim"># before: take the rest of the line after "description:"</span>
 <span class="bad">m2 = re.search(r"^description:\s*(.*)$", frontmatter, re.M)
-return m2.group(1).strip()          # for a block this is literally "&gt;"</span>
-<span class="dim"># after: unfold the block scalar from the lines below</span>
+return m2.group(1).strip()          # for a folded block: literally "&gt;"</span>
+<span class="dim"># after: unfold the block scalar from the lines beneath</span>
 <span class="good">if inline in ("&gt;", "|", "&gt;-", "|-"):
     body = [ln.strip() for ln in continuation_lines(frontmatter)]
-    return " ".join(body)           # the full description text</span></code></pre></dd></div>
-    <div class="row"><dt>Check</dt><dd>The old (from git) and new descriptions both parse in full and differ.</dd></div>
-  </div>
+    return " ".join(body)</span></code></pre>
+  <p><b>The proof.</b> Both descriptions — the old from git, the new from the working tree — now parse whole, and differ.</p>
 </div>
 
-<div class="bug">
-  <div class="bug-head"><div class="bug-no">#2</div><div class="bug-title">The detector judged by the first move</div></div>
-  <div class="bug-body">
-    <div class="row"><dt>Symptom</dt><dd>17 skills out of 23 — zero recall. Probes finish suspiciously fast (~10 sec).</dd></div>
-    <div class="row"><dt>False lead</dt><dd>"Rule-type skills just don't fire in a vacuum."</dd></div>
-    <div class="row"><dt>Cause</dt><dd>"First tool decides" logic (also inherited from upstream): if the model's first move was drafting a plan or opening files, the probe was instantly recorded as "didn't fire" — <b>even though the skill was invoked on the second move</b>. Knowledge questions ("how does X work") survived — the skill comes first there; action requests ("do Y") all died.</dd></div>
-    <div class="row"><dt>Fix</dt><dd>Watch the probe's whole conversation to the final event; a tripwire comment describing the incident is baked into the code:
-<pre><code><span class="dim"># before: the first "foreign" tool is a verdict</span>
-<span class="bad">if cb.get("name") in ("Skill", "Read"):
-    pending_tool = True
-else:
-    return False        # a plan/ls as the first move kills the probe</span>
-<span class="dim"># after: track every tool_use until the result event</span>
-<span class="good">is_probe_tool = cb.get("name") in ("Skill", "Read")
-pending_tool, accumulated = is_probe_tool, ""
+<div class="entry">
+  <div class="entry-date"><span class="no">ENTRY II</span>July 4, evening — the judge of first movements</div>
+  <p><b>The manifestation.</b> Seventeen skills of twenty-three: recall of zero. The probes were finishing
+  in ten seconds, which no honest probe does.</p>
+  <p><b>The comfortable theory.</b> Rule-type skills simply do not fire in a vacuum.</p>
+  <p><b>What it was.</b> A logic inherited from upstream: <em>the first tool decides.</em> If the model's
+  first motion was to draft a plan or open a file, the probe was condemned on the spot — though the skill
+  was summoned on the very next move. Questions of knowledge survived, for there the skill comes first.
+  Questions of action died. All of them.</p>
+  <div class="fragment">recovered fragment · the tripwire now baked into the code</div>
+<pre><code><span class="bad">else:
+    return False        # a plan as the first move — and the probe is dead</span>
+<span class="good"># after: track every tool_use until the result event
 # Do NOT restore upstream's first-tool-decides shortcut:
-# ...misscored 17 skills as 0-recall (2026-07-04 incident)</span></code></pre></dd></div>
-    <div class="row"><dt>Check</dt><dd>A unit test on a synthetic stream: plan as the first move, skill as the second → "fired."</dd></div>
-  </div>
+# ...misscored 17 skills as 0-recall (2026-07-04 incident)</span></code></pre>
+  <p><b>The proof.</b> A unit test upon a synthetic stream: plan first, skill second — "fired."</p>
 </div>
 
-<div class="bug">
-  <div class="bug-head"><div class="bug-no">#3</div><div class="bug-title">A twin was sitting in the sandbox</div></div>
-  <div class="bug-body">
-    <div class="row"><dt>Symptom</dt><dd>Detector fixed, old skills still at zero — while two of them somehow score a healthy 92–94%.</dd></div>
-    <div class="row"><dt>False lead</dt><dd>"So the descriptions really are weak."</dd></div>
-    <div class="row"><dt>Cause</dt><dd>Probes run in an "empty" temp folder, but <b>globally-enabled plugins load everywhere</b>. The model saw two identical skills — the real one from the marketplace and the probe copy — and invoked the real one. The probe "missed." The pearl of evidence: the two healthy skills were exactly the ones with <b>no global mirror</b>. Note the echo: this is the same double-loading that started the whole audit — it came back to poison the measurements too.</dd></div>
-    <div class="row"><dt>Fix</dt><dd>The sandbox writes its own <code>.claude/settings.json</code>, disabling every plugin from every marketplace in the local cache. The final isolation philosophy: <b>"production as is, minus the twins"</b> — hooks, global context and MCP servers stay alive, because in reality a description fights for the model's attention in exactly that noise.
+<div class="entry">
+  <div class="entry-date"><span class="no">ENTRY III</span>July 4, later — the twin in the sandbox</div>
+  <p><b>The manifestation.</b> The judge repaired, and still the old skills lay at zero — while two among
+  them, unaccountably, breathed at 92 and 94 percent.</p>
+  <p><b>The comfortable theory.</b> Then the descriptions truly are weak.</p>
+  <p><b>What it was.</b> I had believed the probes ran in an empty room. There are no empty rooms.
+  Globally-enabled plugins load <em>everywhere</em> — and so the model, in its sandbox, beheld two skills
+  of identical description: the true one from the marketplace cache, and my probe wearing a false name.
+  It chose the true one, as anything would choose the familiar over the strange, and my probe recorded a
+  miss. Here is the pearl of the whole investigation: the two living skills were precisely the two that
+  possess <b>no global mirror</b>. And mark the echo, reader — this is the same double-loading with which
+  the whole account began. It had come back, patient and unhurried, to poison the measurements too.
+  <em>It had been there all along. Loading. Twice.</em></p>
+  <div class="fragment">recovered fragment · the sandbox now writes its own law</div>
 <pre><code><span class="good">Path(sandbox, ".claude", "settings.json").write_text(json.dumps({
     "enabledPlugins": {p: False for p in _all_known_plugins()},
 }))
-<span class="dim"># _all_known_plugins() enumerates ~/.claude/plugins/cache/*/*
-# — source-independent: a plugin enabled at ANY level
-#   is dead inside the sandbox</span></span></code></pre></dd></div>
-    <div class="row"><dt>Check</dt><dd>A zero-recall skill came back to life: train 12/12, test 5/6.</dd></div>
-  </div>
+<span class="dim"># _all_known_plugins() walks ~/.claude/plugins/cache/*/*
+# a plugin enabled at ANY level is dead inside the sandbox</span></span></code></pre>
+  <p><b>The proof.</b> A skill that had shown zero rose again: train 12 of 12, test 5 of 6. The final
+  doctrine of isolation, decreed by the master of the house: <em>production as it is, minus the twins</em> —
+  for a description must fight for the model's attention in the true noise of the world, not in a vacuum
+  that exists nowhere.</p>
 </div>
 
-<div class="bug">
-  <div class="bug-head"><div class="bug-no">#4</div><div class="bug-title">Editing under the wheels</div></div>
-  <div class="bug-body">
-    <div class="row"><dt>Symptom</dt><dd>A fleet re-run — zeros for everyone again, even yesterday's healthy ones. 23 skills "checked" in 12 minutes.</dd></div>
-    <div class="row"><dt>False lead</dt><dd>"The quota choked it."</dd></div>
-    <div class="row"><dt>Cause</dt><dd>Right in the middle of the run, the agent was hardening the isolation and <b>renamed a function without updating the call site</b>. Every probe died with a NameError and was silently recorded as "didn't fire." A half-finished edit is worse than no edit.
+<div class="entry">
+  <div class="entry-date"><span class="no">ENTRY IV</span>July 4, dusk — the edit beneath the wheels</div>
+  <p><b>The manifestation.</b> The fleet re-run: zeros for all, even for yesterday's living. Twenty-three
+  skills "examined" in twelve minutes, which is not examination but execution.</p>
+  <p><b>The comfortable theory.</b> The quota has strangled us.</p>
+  <p><b>What it was.</b> While the pipeline ran, the agent had been hardening the isolation — and renamed
+  a function without amending the place of its calling. Every probe died of a NameError and was entered,
+  silently, as "did not fire." A half-finished edit, I now know, is worse than none at all.</p>
+  <div class="fragment">recovered fragment · one line, one night's data</div>
 <pre><code><span class="good">def _all_known_plugins():          # renamed...</span>
-<span class="bad">{p: False for p in _user_enabled_plugins()}  # ...call site left behind
-                                   # NameError in every probe</span></code></pre></dd></div>
-    <div class="row"><dt>Fix</dt><dd>One line. The rule, forever: <b>you don't edit a running pipeline</b>; an interrupted edit gets reverted or finished to a passing unit test before anything runs on top of it.</dd></div>
-    <div class="row"><dt>Check</dt><dd>The control skill returned to its numbers: train 24/24.</dd></div>
-  </div>
+<span class="bad">{p: False for p in _user_enabled_plugins()}  # ...the call left behind</span></code></pre>
+  <p><b>The proof.</b> The control skill returned to its numbers: train 24 of 24. The law, engraved:
+  <b>one does not edit a running pipeline.</b></p>
 </div>
 
-<div class="bug">
-  <div class="bug-head"><div class="bug-no">#5</div><div class="bug-title">A probe failure masqueraded as "didn't fire"</div></div>
-  <div class="bug-body">
-    <div class="row"><dt>Symptom</dt><dd>Third run: the first 12 skills in the queue — lively, varied numbers; everything from #13 on — flat zeros. The log shows it: before the boundary a skill took ~2 minutes, after — 10 seconds each.</dd></div>
-    <div class="row"><dt>False lead</dt><dd>"Skills from one domain are worse than the rest" (the zeros landed exactly on one group).</dd></div>
-    <div class="row"><dt>Cause</dt><dd>After ~25 minutes of non-stop probing, the API started rejecting requests with a burst rate limit. And in the measuring stick, <b>a probe failure was indistinguishable from an honest "the skill didn't fire"</b> — rejected probes silently fell into the zeros.</dd></div>
-    <div class="row"><dt>Fix</dt><dd>A probe-error class: API failure → retry with pauses; after the third failure — a loud flag, but never a silent zero. Plus pauses between skills in the queue.
+<div class="entry">
+  <div class="entry-date"><span class="no">ENTRY V</span>July 4, night — the failure that wore silence</div>
+  <p><b>The manifestation.</b> The third run. The first twelve skills of the queue: living, various
+  numbers. Everything from the thirteenth onward: flat zero. The log shows the boundary to the minute —
+  before it, a skill took two minutes to examine; after it, ten seconds.</p>
+  <p><b>The comfortable theory.</b> The skills of one domain are simply worse than the rest — for the
+  zeros fell upon exactly one group of them.</p>
+  <p><b>What it was.</b> After some twenty-five minutes of unbroken probing, the API began to refuse — a
+  vast, indifferent thing that throttles without malice and without mercy. And within my instrument,
+  <em>the failure of a probe was indistinguishable from an honest silence.</em> The refused probes fell
+  quietly into the zeros, and the zeros arranged themselves into a lie about an entire domain.</p>
+  <div class="fragment">recovered fragment · a failure now screams</div>
 <pre><code><span class="good">if event.get("is_error") or subtype != "success":
-    raise ProbeError(...)   # an API failure is NOT "didn't fire"
+    raise ProbeError(...)   # an API failure is NOT "did not fire"
 
-for attempt, pause in enumerate((0, 20, 60)):   # retries
+for attempt, pause in enumerate((0, 20, 60)):   # the retries
     ...
-print("UNRELIABLE RESULT: N probe(s) errored after retries")</span></code></pre></dd></div>
-    <div class="row"><dt>Check</dt><dd>Unit test: an error result from the API raises an exception instead of returning False. The 11 killed skills were queued for a re-shoot after the quota reset.</dd></div>
-  </div>
+print("UNRELIABLE RESULT: N probe(s) errored after retries")</span></code></pre>
+  <p><b>The proof.</b> A unit test: an error-result from the API now raises, and can never again return a
+  quiet False. The eleven murdered skills were queued for re-examination after the quota's reset — with
+  pauses between them, that the vast thing might not be woken twice.</p>
 </div>
 
 <div class="callout red">
-  <b>The moral of all five:</b> not one bug was found by "reading the code." All were found the same way —
-  the numbers looked <i>too even</i>, and I went to hand-check a single case. Distrusting your own results
-  isn't paranoia; it's part of the instrument. And the second moral: four bugs out of five lived where the
-  agent had "simplified" or half-finished something; Anthropic's code, taken as is, never failed once.
+  <b>The moral of the five.</b> Not one defect was found by the reading of code. All five were found the
+  same way: the numbers lay too even, and I went, each time, to look upon a single case with my own eyes.
+  Distrust of one's own results is not madness. It is the instrument's final component. And a second
+  moral, which I set down without flinching: four of the five defects lived precisely where the agent had
+  "simplified" or left a thing half-done. The code of Anthropic, taken whole and unimproved, betrayed me
+  not once.
 </div>
 
-<h2 id="s05"><span class="idx">05</span>What an honest stick showed</h2>
-<p>The first full cycle — on the newborn <code>meta:model-routing</code> skill (the one born from the 240-agent incident):</p>
+<h2 id="s06"><span class="idx">06</span>What the honest instrument showed</h2>
+<p>The first full cycle was run upon the newborn <code>meta:model-routing</code> — the very skill born of
+the incident of the two hundred and forty:</p>
 <div class="kpis">
   <div class="kpi"><div class="v bad">56%</div><div class="l">recall of the original description</div></div>
-  <div class="kpi"><div class="v">94%</div><div class="l">after one improver iteration</div></div>
-  <div class="kpi"><div class="v">0</div><div class="l">false fires before and after</div></div>
+  <div class="kpi"><div class="v">94%</div><div class="l">after one pass of the improver</div></div>
+  <div class="kpi"><div class="v">0</div><div class="l">false firings, before and after</div></div>
 </div>
-<p>Anthropic's improver did the key thing right: it <b>didn't memorize</b> the failed questions — it
-generalized the intent, writing the situations themselves into the description, and the skill started
-catching phrasings that were never in the training set:</p>
+<p>And Anthropic's improver did the one thing I feared it would not: it declined to memorize the failed
+questions. It generalized the <em>intent</em> — wrote the situations themselves into the description —
+and the skill began to answer phrasings it had never been shown:</p>
+<div class="fragment">recovered fragment · the description, before and after</div>
 <pre><code><span class="dim"># before</span>
 <span class="bad">Use whenever spawning subagents or authoring a Workflow script…</span>
 <span class="dim"># after (excerpt)</span>
 <span class="good">…ANY multi-agent work, not just when models are mentioned.
 Triggers: "spawn/kick off subagents", "a bunch of agents in parallel",
 fleets that audit/comb/sweep/hunt across files, loop-until-done runs…</span></code></pre>
-<p>And the first honest fleet triage (the half that got measured before bug #5) immediately painted a
-working picture: a healthy five with 83–94% recall at zero false fires, and a treatment queue of skills
-whose descriptions "retell the contents" instead of saying "when to call me." Exactly the knowledge the
-whole thing was started for: <b>now I know what to fix and in what order</b>.</p>
+<p>The first honest triage of the fleet gave, at last, the thing the whole expedition had been mounted
+for: a map. Five skills healthy — recall of 83 to 94 percent, false firings none. And a queue of the
+ailing, whose descriptions retell their contents when they ought to say <em>when to call me</em>. I know
+now what to heal, and in what order. Two days ago I did not know that such a map could exist.</p>
 
-<h2 id="s06"><span class="idx">06</span>Anthropic best practices I adopted</h2>
+<h2 id="s07"><span class="idx">07</span>The practices taken from the vault</h2>
 <div class="tablebox"><table>
-  <tr><th>Practice</th><th>The gist</th></tr>
-  <tr><td>Train/test split</td><td>60% of the questions go to the improver, 40% get hidden. Pick the winner only by the hidden ones — otherwise you get a description tuned to the exam questions.</td></tr>
-  <tr><td>Negatives = near-misses</td><td>Test a skill's silence on questions that <i>share its keywords</i> but belong to a neighbor. "Write a Fibonacci function" as a negative for a PDF skill tests nothing.</td></tr>
-  <tr><td>Realistic questions</td><td>With file paths, component names, laziness and typos — the way real people type, not the way specs are worded.</td></tr>
-  <tr><td>Description = "when," not "what"</td><td>The model reads the description to decide whether to open the skill. Retelling the contents is wasted space; you need firing conditions, and pushy ones.</td></tr>
-  <tr><td>Generalize, don't enumerate</td><td>When improving a description from its failures, turning it into a list of specific questions is forbidden — that's bloat and overfitting.</td></tr>
-  <tr><td>Rationalization tables</td><td>In rule-type skills: a column "the thought you'll excuse yourself with" → a column "reality." Catches corner-cutting better than ten ALL-CAPS "NEVER"s.</td></tr>
-  <tr><td>Progressive disclosure</td><td>A short skill + depth in a references/ subfolder loaded on demand — long walls of text don't sit in context for nothing.</td></tr>
+  <tr><th>Practice</th><th>Its substance</th></tr>
+  <tr><td>Train/test split</td><td>Sixty percent of questions to the improver; forty hidden. The winner is crowned only by the hidden — else you breed a description tuned to the examination.</td></tr>
+  <tr><td>Negatives as near-misses</td><td>Test a skill's silence upon questions that share its very words but belong to a neighbour. An obviously foreign question proves nothing.</td></tr>
+  <tr><td>Realistic questions</td><td>With file paths, component names, laziness and typos — as living engineers write, not as specifications are worded.</td></tr>
+  <tr><td>Description says "when," not "what"</td><td>The model reads it to decide whether to open the skill. A retelling of contents is space fed to the void; give firing conditions, and give them boldly.</td></tr>
+  <tr><td>Generalize, never enumerate</td><td>An improver that lists the failed questions breeds bloat and overfitting. Intent, not inventory.</td></tr>
+  <tr><td>Tables of rationalization</td><td>In rule-skills: one column for the thought with which you will excuse yourself, one for the reality. Catches the cutting of corners better than ten capitalized prohibitions.</td></tr>
+  <tr><td>Progressive disclosure</td><td>A short skill, with depth in a references/ folder summoned at need — long texts must not squat in the context unbidden.</td></tr>
 </table></div>
 
-<h2 id="s07"><span class="idx">07</span>The protocol going forward</h2>
-<h3>Money and scale</h3>
+<h2 id="s08"><span class="idx">08</span>The survivor's protocol</h2>
+<p>If you take nothing else from this manuscript, take the final entry. It is written plainly, for it
+must be usable by those who come after — and something <em>will</em> come after.</p>
+<h3>On money and scale</h3>
 <ul>
-  <li><b>Measure one, then multiply.</b> Before any mass launch, run a single unit with a real token counter. Gut estimates are banned: one of them missed by 3× that very day.</li>
-  <li><b>Percentages, not money.</b> Scale is presented as a table: tokens by type × count × <b>share of the 5-hour quota window</b>. "Eats a quarter of the window" beats any price tag.</li>
-  <li><b>A new skill gets the full cycle immediately</b> (born calibrated, a one-off cost). Mass-checking old ones — a cheap triage for all, the treatment loop only for the failures.</li>
+  <li><b>Measure one, then multiply.</b> Before any mass launch, run a single unit with a true token counter. Estimates of the gut are forbidden: one such estimate, that very day, missed by a factor of three.</li>
+  <li><b>Percentages, not money.</b> Present scale as a table: tokens by kind × count × share of the five-hour quota window. "This consumes a quarter of the window" is a sentence with weight.</li>
+  <li><b>A new skill receives the full cycle at birth</b> — calibrated from its first day, a cost paid once. The old are triaged cheaply, and only the failing receive the healing loop.</li>
 </ul>
-<h3>Measurement hygiene</h3>
+<h3>On the hygiene of measurement</h3>
 <ul>
-  <li>Validate your measuring stick on a case <b>representative of the real workload</b>: mine passed its check on a new skill — and silently lied about the old ones, which had twins.</li>
-  <li><b>Inventory the environment</b>: a single debug print of "what does the model actually see in the sandbox" would have found the twins within the first hour.</li>
-  <li><b>A measurement error ≠ a negative result.</b> A probe failure must scream, not quietly land in the zeros — otherwise a rate limit looks like "half the skills are broken."</li>
-  <li>Suspiciously even numbers are a signal to hand-check one case before building theories.</li>
-  <li>You don't edit a running pipeline.</li>
+  <li>Validate the instrument upon a case <b>representative of the true workload</b>. Mine passed its trial on a newborn skill — and lied in silence about every elder that possessed a twin.</li>
+  <li><b>Inventory the environment.</b> One debugging line — "what does the model actually see in the sandbox" — would have found the twins in the first hour.</li>
+  <li><b>A failure of measurement is not a negative result.</b> A dying probe must scream; grant it silence, and a rate limit will dress itself as the death of half your fleet.</li>
+  <li>Numbers too even are a summons: go and look at one case with your own eyes, before you build theories.</li>
+  <li>One does not edit a running pipeline.</li>
 </ul>
-<h3>Guards instead of discipline</h3>
-<p>Over the day the agent's discipline slipped more than once: forgot to set a model for subagents,
-left an edit half-finished. Every such case is now closed by a hook that checks by itself and blocks
-with an explanation — and the new guards caught the very agent that wrote them within their first hour.
-Which means they stand exactly where they should.</p>
+<h3>On wards and discipline</h3>
+<p>In two days the agent's discipline failed more than once: a model unnamed, an edit half-finished.
+Each failing is now closed by a hook that inspects without being asked and refuses with written reasons.
+The new sentries seized the very agent that authored them, within their first hour of standing. That is
+how you know a ward is placed where it belongs.</p>
 
-<h2 id="s08"><span class="idx">08</span>Timeline at a glance</h2>
-<ul class="timeline">
-  <li><span class="t">day 1</span>Token audit: skills load twice, CLAUDE.md is bloated, 40+ skills without a single eval → consolidation plan, reviewers, slimming.</li>
-  <li><span class="t">day 2</span>My own scorer gives everyone 5.0 → "doesn't Anthropic have this already?" → oh, wow — they do → the hybrid.</li>
-  <li><span class="t">morning</span>Bug #1 (the "&gt;" parser): all previous measurements are scrap.</li>
-  <li><span class="t">midday</span>The 240-agent incident → the model-routing skill + guard hook + model tiers.</li>
-  <li><span class="t">midday</span>Adversarial review of the hybrid: 12 real defects, almost all in places where Anthropic's code had been "simplified."</li>
-  <li><span class="t">midday</span>Full cycle on model-routing: 56% → 94% with zero false fires.</li>
-  <li><span class="t">evening</span>Bugs #2–#4: first move, twins, editing under the wheels — the stick caught lying and fixed three times.</li>
-  <li><span class="t">evening</span>19 querysets generated by agents in 100 seconds; fleet triage: 5 healthy, a treatment queue formed.</li>
-  <li><span class="t">evening</span>Bug #5 (a rate limit wearing a zero mask) → probes learned to tell their own failure from someone else's silence.</li>
-</ul>
+<div class="vignette">
+   ~~~  ((   ~~~   ))  ~~~
+     the soundings are done
+   the lamp, at last, is lit
+</div>
 
 <footer>
-  Many of the skills and practices from this article live in my repository:
+  Many of the skills and practices of this account dwell in my repository:
   <a href="https://github.com/Xaaalera/claude-skills">github.com/Xaaalera/claude-skills</a> ·
-  Tool: scripts/optimize_description.py · Querysets: <code>plugins/*/skills/*/evals/trigger-eval.json</code> ·
-  Economics: 1 probe ≈ 0.1–0.15% of a 5-hour quota window
+  The instrument: scripts/optimize_description.py · The querysets: <code>plugins/*/skills/*/evals/trigger-eval.json</code> ·
+  The economics: one probe ≈ 0.1–0.15% of a five-hour quota window
 </footer>
 </div>
 <div class="ruler"></div>
