@@ -1,5 +1,10 @@
-<title>Скилы Claude: доверяй, но замеряй</title>
-<meta name="description" content="От токен-аудита и двойной загрузки скилов — до рабочего eval-конвейера: пять багов измерительной линейки, 240 агентов одной аварией и бест-практис Anthropic, забранные себе.">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claude Skills: Trust, but Measure</title>
+<meta name="description" content="From a token audit and double-loaded skills to a working eval pipeline: five bugs in my own measuring stick, a 240-agent incident, and the Anthropic best practices I adopted.">
 <style>
   :root{
     --paper:#0f191b; --card:#182a2e; --codebg:#0a1315;
@@ -50,7 +55,7 @@
   .timeline{list-style:none;margin:1em 0;padding:0;border-left:2px solid var(--teal)}
   .timeline li{position:relative;padding:6px 0 6px 24px;font-size:15.5px;max-width:84ch}
   .timeline li::before{content:"";position:absolute;left:-6px;top:14px;width:10px;height:10px;border-radius:50%;background:var(--paper);border:2px solid var(--teal)}
-  .timeline .t{font-family:var(--mono);font-size:12.5px;color:var(--teal);display:inline-block;min-width:5.4ch}
+  .timeline .t{font-family:var(--mono);font-size:12.5px;color:var(--teal);display:inline-block;min-width:6.5ch}
   .big{font-family:var(--mono);font-variant-numeric:tabular-nums}
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:1.4em 0;max-width:760px}
   .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
@@ -70,255 +75,272 @@
   footer{margin-top:76px;padding-top:20px;border-top:1px solid var(--line);font-family:var(--mono);font-size:13px;color:var(--ink-soft)}
   @media (max-width:640px){.wrap{margin:12px auto;padding:4px 18px 60px;border-radius:10px}.row{grid-template-columns:1fr}.row dt{padding-top:0}}
 </style>
-
+</head>
+<body>
 <div class="ruler"></div>
 <div class="wrap">
 
 <header>
   <div style="margin-bottom:14px"><a href="../" style="font-family:var(--mono);font-size:13px;text-decoration:none">&larr; xaaalera.github.io</a></div>
-  <div class="eyebrow">Инженерная сага · 3–4 июля 2026</div>
-  <h1>Скилы Claude: доверяй, но замеряй</h1>
-  <p class="sub">Началось с раздражающего вопроса «куда утекают токены?». Кончилось рабочим конвейером
-  оценки скилов на базе инструментов Anthropic, тремя хуками-стражами и пятью пойманными багами
-  собственной измерительной линейки. С уликами, цифрами и моралью.</p>
+  <div class="eyebrow">An engineering saga · July 3–4, 2026</div>
+  <h1>Claude Skills: Trust, but Measure</h1>
+  <p class="sub">It started with an annoying question: "where are my tokens going?" It ended with a working
+  skill-evaluation pipeline built on Anthropic's own tooling, three guard hooks, and five bugs caught in my
+  own measuring stick. With evidence, numbers, and a moral.</p>
   <div class="meta">
-    <span>5 багов линейки</span><span>3 хука-стража</span><span>26 querysets</span><span>240 агентов одной аварией</span>
+    <span>5 measuring-stick bugs</span><span>3 guard hooks</span><span>26 querysets</span><span>240 agents in one incident</span>
   </div>
 </header>
-<nav class="toc"><div class="toc-t">Оглавление</div><ol><li><a href="#s00"><span class="n">00</span>Словарик — чтобы дальше было не душно</a></li><li><a href="#s01"><span class="n">01</span>С чего всё началось: «куда утекают токены?»</a></li><li><a href="#s02"><span class="n">02</span>Сначала велосипед, потом — «о чудо»</a></li><li><a href="#s03"><span class="n">03</span>Побочный взрыв: 240 агентов на Опусе</a></li><li><a href="#s04"><span class="n">04</span>Охота на линейку: пять багов</a></li><li><a href="#s05"><span class="n">05</span>Что показала честная линейка</a></li><li><a href="#s06"><span class="n">06</span>Бест-практис Anthropic, забранные себе</a></li><li><a href="#s07"><span class="n">07</span>Протокол на будущее</a></li><li><a href="#s08"><span class="n">08</span>Хронология — одним взглядом</a></li></ol></nav>
 
+<nav class="toc"><div class="toc-t">Contents</div><ol>
+<li><a href="#s00"><span class="n">00</span>Glossary — so the rest isn't a slog</a></li>
+<li><a href="#s01"><span class="n">01</span>How it started: "where are my tokens going?"</a></li>
+<li><a href="#s02"><span class="n">02</span>First a bicycle, then — "oh, wow"</a></li>
+<li><a href="#s03"><span class="n">03</span>Side explosion: 240 agents on Opus</a></li>
+<li><a href="#s04"><span class="n">04</span>Hunting the measuring stick: five bugs</a></li>
+<li><a href="#s05"><span class="n">05</span>What an honest stick showed</a></li>
+<li><a href="#s06"><span class="n">06</span>Anthropic best practices I adopted</a></li>
+<li><a href="#s07"><span class="n">07</span>The protocol going forward</a></li>
+<li><a href="#s08"><span class="n">08</span>Timeline at a glance</a></li>
+</ol></nav>
 
-<h2 id="s00"><span class="idx">00</span>Словарик — чтобы дальше было не душно</h2>
+<h2 id="s00"><span class="idx">00</span>Glossary — so the rest isn't a slog</h2>
 <div class="tablebox"><table>
-  <tr><th>Термин</th><th>По-человечески</th></tr>
-  <tr><td><b>Скил</b></td><td>Файл-инструкция для Claude: «когда делаешь X — работай вот так». У каждого есть <b>описание</b> — пара предложений, по которым модель решает, открывать его или нет.</td></tr>
-  <tr><td><b>Маркетплейс</b></td><td>Git-репозиторий со скилами, из которого они подключаются к проектам.</td></tr>
-  <tr><td><b>Триггеринг</b></td><td>Сработал ли скил, когда был нужен, и промолчал ли, когда не был.</td></tr>
-  <tr><td><b>Eval / проба</b></td><td>Автотест триггеринга: свежий экземпляр Claude получает один вопрос — смотрим, потянулся ли он к скилу. Одна проба = один такой запуск.</td></tr>
-  <tr><td><b>Queryset</b></td><td>18 вопросов на скил: 9 «должен сработать» + 9 «должен промолчать».</td></tr>
-  <tr><td><b>Отклик / точность</b></td><td>Отклик (recall) — не пропускает нужное; точность (precision) — не лезет в ненужное.</td></tr>
-  <tr><td><b>Held-out тест</b></td><td>Часть вопросов прячем от «улучшателя» и судим только по ним — защита от подгонки под ответы.</td></tr>
-  <tr><td><b>Хук</b></td><td>Скрипт, который среда выполняет сама на событиях (перед запуском инструмента, после записи файла) — принуждение вместо самодисциплины.</td></tr>
+  <tr><th>Term</th><th>In plain words</th></tr>
+  <tr><td><b>Skill</b></td><td>An instruction file for Claude: "when doing X, work like this." Each has a <b>description</b> — a couple of sentences the model uses to decide whether to open it.</td></tr>
+  <tr><td><b>Marketplace</b></td><td>A git repository of skills that projects pull them from.</td></tr>
+  <tr><td><b>Triggering</b></td><td>Did the skill fire when needed, and stay silent when not.</td></tr>
+  <tr><td><b>Eval / probe</b></td><td>An automated triggering test: a fresh Claude instance gets one question — we watch whether it reaches for the skill. One probe = one such run.</td></tr>
+  <tr><td><b>Queryset</b></td><td>18 questions per skill: 9 "should fire" + 9 "should stay silent."</td></tr>
+  <tr><td><b>Recall / precision</b></td><td>Recall — doesn't miss what it should catch; precision — doesn't butt in where it shouldn't.</td></tr>
+  <tr><td><b>Held-out test</b></td><td>A slice of questions hidden from the "improver," used as the only judge — protection against teaching to the test.</td></tr>
+  <tr><td><b>Hook</b></td><td>A script the environment runs by itself on events (before a tool call, after a file write) — enforcement instead of self-discipline.</td></tr>
 </table></div>
 
-<h2 id="s01"><span class="idx">01</span>С чего всё началось: «куда утекают токены?»</h2>
-<p>Никакого плана «строить eval-систему» не было. Был раздражающий факт: токены таяли быстрее, чем
-казалось разумным. Я пошёл разбираться, и аудит вскрыл слоёный пирог:</p>
+<h2 id="s01"><span class="idx">01</span>How it started: "where are my tokens going?"</h2>
+<p>There was no plan to "build an eval system." There was an annoying fact: tokens were melting faster
+than seemed reasonable. I went digging, and the audit uncovered a layer cake:</p>
 <ul class="timeline">
-  <li><span class="t">раз</span><b>Скилы грузились дважды.</b> Личный маркетплейс и рабочий — почти зеркала, и в проекте были включены оба: ~23 скила сидели в контексте двумя копиями. Каждую сессию. Молча. Исправление — одна строка конфига, экономия — с каждого запуска.</li>
-  <li><span class="t">два</span><b>CLAUDE.md раздулся.</b> Файлы инструкций, которые грузятся всегда: глобальный, проектный (~1500 токенов), плюс правила стиля общения, продублированные в двух местах сразу — двойная оплата каждую сессию и риск расползания версий.</li>
-  <li><span class="t">три</span><b>Скилов накопилось 40+, а eval по ним не гонялся ни разу.</b> Я собрал большую базу скилов — но проверить, срабатывают ли их описания, было банально нечем: ни инструмента, ни методики, ни одного замера.</li>
+  <li><span class="t">one</span><b>Skills loaded twice.</b> My personal marketplace and the work one are near-mirrors, and the project had both enabled: ~23 skills sat in context as two copies. Every session. Silently. The fix was one line of config; the savings — on every run since.</li>
+  <li><span class="t">two</span><b>CLAUDE.md had bloated.</b> Instruction files that always load: the global one, the project one (~1,500 tokens), plus communication-style rules duplicated in two places at once — double payment every session and version-drift risk.</li>
+  <li><span class="t">three</span><b>40+ skills had piled up — and not one had ever been through an eval.</b> I had built a big skill base, but there was simply nothing to check descriptions with: no tool, no method, not a single measurement.</li>
 </ul>
-<p>Дальше — по-взрослому: прогнал своё хозяйство через <b>официальные практики Anthropic</b> (их
-эталонный плагин-репозиторий) и получил список пробелов — отсутствие evals оказался самым жирным.
-Так родился план консолидации: убрать двойную загрузку, ужать всегда-загружаемое, завести ревьюеров —
-и <b>научиться измерять скилы числом</b>. Эта страница — про последний, самый ухабистый пункт.</p>
+<p>Then, the grown-up move: I ran my whole setup against <b>Anthropic's official practices</b> (their
+reference plugin repository) and got a gap list — missing evals being the fattest gap of all. That's how
+the consolidation plan was born: kill the double load, slim down the always-loaded files, add reviewers —
+and <b>learn to measure skills with numbers</b>. This page is about that last, bumpiest item.</p>
 
-<h2 id="s02"><span class="idx">02</span>Сначала велосипед, потом — «о чудо»</h2>
-<p>Как честный инженер, я, разумеется, начал строить свой скорер — строил, понятно, не руками, а руками Claude-агента. Запомните это распределение ролей: дальше оно пригодится, когда будем раздавать вину. Он даже заработал — и выдал всем
-скилам ровно 5.0/10. Всем. Одинаково. (Запомните этот приём: <i>слишком ровные цифры — сигнал</i>.)
-И вот тут, вместо того чтобы чинить велосипед дальше, я остановился и задал вопрос, который стоило
-задать до первой строчки кода: <b>а нет ли готового у Anthropic?</b></p>
-<p>О чудо — было. Целый конвейер внутри их плагина <code>skill-creator</code>, о котором я даже не подозревал:</p>
+<h2 id="s02"><span class="idx">02</span>First a bicycle, then — "oh, wow"</h2>
+<p>Being an honest engineer, I naturally started building my own scorer — building it, of course, not
+with my own hands but with a Claude agent's. Remember that division of roles: it will matter later, when
+we hand out the blame. The scorer even worked — and gave every skill exactly 5.0/10. Every one.
+Identically. (Remember this trick: <i>numbers that are too even are a signal</i>.) And here, instead of
+fixing the bicycle further, I stopped and asked the question worth asking before the first line of code:
+<b>doesn't Anthropic already have this?</b></p>
+<p>Oh, wow — they did. A whole pipeline inside their <code>skill-creator</code> plugin that I hadn't even suspected:</p>
 <ul>
-  <li><code>run_eval.py</code> — прогон вопросов и детект срабатываний;</li>
-  <li><code>run_loop.py</code> — <b>автоцикл улучшения</b>: замер → LLM переписывает описание по списку промахов → перезамер → выбор лучшей версии по held-out тесту;</li>
-  <li>методичка: вопросы должны быть реалистичными (пути, опечатки, лень), а негативы — только «почти-попаданиями».</li>
+  <li><code>run_eval.py</code> — runs the questions and detects firings;</li>
+  <li><code>run_loop.py</code> — an <b>automatic improvement loop</b>: measure → an LLM rewrites the description based on the misses → re-measure → pick the best version by the held-out test;</li>
+  <li>a methodology: questions must be realistic (paths, typos, laziness), and negatives must be "near-misses" only.</li>
 </ul>
 <div class="callout">
-  <b>Решение:</b> не переписывать их конвейер и не доделывать велосипед, а <b>скрестить</b> — взять цикл
-  Anthropic целиком и подменить ровно одну функцию: их код регистрирует тестируемый скил как слэш-команду,
-  я регистрирую как настоящий скил — так, как он живёт в проде. Одна подмена, ноль форков, обновления
-  апстрима бесплатны.
+  <b>The decision:</b> don't rewrite their pipeline and don't finish the bicycle — <b>hybridize</b>. Take
+  Anthropic's loop wholesale and swap exactly one function: their code registers the skill under test as a
+  slash command; I register it as a real skill — the way it lives in production. One substitution, zero
+  forks, upstream updates for free.
 </div>
 
-<h2 id="s03"><span class="idx">03</span>Побочный взрыв: 240 агентов на Опусе</h2>
-<p>Параллельно случилась авария, окупившая себя многократно. Для ревью нового кода я запустил
-многоагентный воркфлоу: «охотники ищут баги, скептики проверяют каждую находку». Через полчаса счётчик
-показал <b class="big">240 агентов</b> — все на Опусе. Не самая дорогая модель (пальма у Fable),
-но вполне затратная — а тут её жгли двести сорок ртов одновременно.</p>
+<h2 id="s03"><span class="idx">03</span>Side explosion: 240 agents on Opus</h2>
+<p>In parallel, an incident happened that paid for itself many times over. For a code review I launched
+a multi-agent workflow: "hunters find bugs, skeptics verify every finding." Half an hour later the
+counter read <b class="big">240 agents</b> — all on Opus. Not the most expensive model (that crown
+belongs to Fable), but a pricey one — and here two hundred and forty mouths were burning it at once.</p>
 <ul class="timeline">
-  <li><span class="t">→</span>Охотники каждый раунд <b>переформулировали</b> те же находки — дедупликация по названию их не ловила, и «новым» находкам снова выдавали по два проверяющих. Снежный ком.</li>
-  <li><span class="t">→</span>Условие остановки «пока не иссякнут находки» с творческой моделью <b>не наступает никогда</b> — она всегда что-нибудь придумает.</li>
-  <li><span class="t">→</span>Модель агентам никто явно не указал — все молча унаследовали дорогую сессионную.</li>
+  <li><span class="t">→</span>Each round, the hunters <b>rephrased</b> the same findings — title-based deduplication didn't catch them, and every "new" finding got two more verifiers. A snowball.</li>
+  <li><span class="t">→</span>The stop condition "until findings dry up" <b>never arrives</b> with a creative model — it always invents something.</li>
+  <li><span class="t">→</span>Nobody explicitly set a model for the agents — they all silently inherited the expensive session one.</li>
 </ul>
-<p>Из аварии родилась трёхслойная система:</p>
+<p>Out of the incident came a three-layer system:</p>
 <div class="tablebox"><table>
-  <tr><th>Слой</th><th>Что делает</th></tr>
-  <tr><td><b>Скил <code>meta:model-routing</code></b></td><td>Закон о ярусах: дорогая модель — только «головным» судьям и синтезу (и их мало), средняя — работе с суждением (ревью, верификация, поиск по коду), дешёвая — механике (грепы, переименования). Плюс правило: перед массовым запуском — <b>замер одной единицы и таблица масштаба в процентах квоты</b>, не в деньгах: «съест четверть окна» информативнее любой суммы.</td></tr>
-  <tr><td><b>Хук-страж</b></td><td>Проверка перед каждым запуском агентов: нет явной модели — <span class="stamp bad">СТОП</span> с объяснением. Дисциплина — расходник, хук — капитал: в первый же час страж заблокировал вызов собственного создателя.</td></tr>
-  <tr><td><b>Дефолты агентов</b></td><td>Постоянным агентам модель прошита в конфиге — каждый запуск дёшев по построению. Заодно выяснилось, что «документный охотник» сидел на слишком слабой модели для своих задач — поднял.</td></tr>
+  <tr><th>Layer</th><th>What it does</th></tr>
+  <tr><td><b>The <code>meta:model-routing</code> skill</b></td><td>A law of tiers: the expensive model only for a few "head" judges and synthesis, the mid-tier for judgment work (review, verification, code reading), the cheap tier for mechanics (greps, renames). Plus a rule: before any mass launch — <b>measure one unit and present a scale table in quota percentages</b>, not money: "this eats a quarter of the window" beats any price tag.</td></tr>
+  <tr><td><b>The guard hook</b></td><td>A check before every agent launch: no explicit model — <span class="stamp bad">BLOCKED</span> with an explanation. Discipline is a consumable; a hook is capital: within its first hour the guard blocked a call from its own creator.</td></tr>
+  <tr><td><b>Agent defaults</b></td><td>Permanent agents get their model pinned in config — every launch is cheap by construction. Along the way it turned out the "docs hunter" sat on a model too weak for its job — bumped it.</td></tr>
 </table></div>
 
-<h2 id="s04"><span class="idx">04</span>Охота на линейку: пять багов</h2>
-<p>Дальше — детектив. Каждый баг маскировался под «скилы плохие», а виновата была линейка. Приём
-поимки один и тот же: <b>подозрительно ровные цифры → ручная проверка одного случая</b>.</p>
+<h2 id="s04"><span class="idx">04</span>Hunting the measuring stick: five bugs</h2>
+<p>Then, a detective story. Every bug masqueraded as "the skills are bad" while the measuring stick was
+the culprit. The catching technique was the same every time: <b>suspiciously even numbers → hand-check
+one case</b>.</p>
 
 <div class="bug">
-  <div class="bug-head"><div class="bug-no">#1</div><div class="bug-title">Парсер читал «&gt;» вместо описания</div></div>
+  <div class="bug-head"><div class="bug-no">#1</div><div class="bug-title">The parser read "&gt;" instead of the description</div></div>
   <div class="bug-body">
-    <div class="row"><dt>Симптом</dt><dd>Все скилы — ровно 5.0/10. Строка «было → стало» не печатается.</dd></div>
-    <div class="row"><dt>Ложный след</dt><dd>«Описания слабые, надо переписывать».</dd></div>
-    <div class="row"><dt>Причина</dt><dd>YAML умеет «свёрнутые» многострочные описания (<code>description: &gt;</code> и текст ниже). Парсер агента забирал только символ <code>&gt;</code> — <b>целый день измерялись пустые описания</b>. Пикантно: у Anthropic парсер это умел изначально; багу агент внёс сам, «упрощая» их код.</dd></div>
-    <div class="row"><dt>Фикс</dt><dd>Разворачивание блочных скаляров:
-<pre><code><span class="dim"># было: захватываем остаток строки после "description:"</span>
+    <div class="row"><dt>Symptom</dt><dd>Every skill — exactly 5.0/10. The "before → after" line never prints.</dd></div>
+    <div class="row"><dt>False lead</dt><dd>"The descriptions are weak, rewrite them."</dd></div>
+    <div class="row"><dt>Cause</dt><dd>YAML supports "folded" multi-line descriptions (<code>description: &gt;</code> with text below). The agent's parser grabbed only the <code>&gt;</code> character — <b>an entire day was spent measuring empty descriptions</b>. The spicy part: Anthropic's parser handled this from the start; the agent introduced the bug itself while "simplifying" their code.</dd></div>
+    <div class="row"><dt>Fix</dt><dd>Unfold block scalars:
+<pre><code><span class="dim"># before: capture the rest of the line after "description:"</span>
 <span class="bad">m2 = re.search(r"^description:\s*(.*)$", frontmatter, re.M)
-return m2.group(1).strip()          # для блока это буквально "&gt;"</span>
-<span class="dim"># стало: блочный скаляр разворачиваем из строк ниже</span>
+return m2.group(1).strip()          # for a block this is literally "&gt;"</span>
+<span class="dim"># after: unfold the block scalar from the lines below</span>
 <span class="good">if inline in ("&gt;", "|", "&gt;-", "|-"):
     body = [ln.strip() for ln in continuation_lines(frontmatter)]
-    return " ".join(body)           # полный текст описания</span></code></pre></dd></div>
-    <div class="row"><dt>Чек</dt><dd>Старое (из git) и новое описания читаются целиком и различаются.</dd></div>
+    return " ".join(body)           # the full description text</span></code></pre></dd></div>
+    <div class="row"><dt>Check</dt><dd>The old (from git) and new descriptions both parse in full and differ.</dd></div>
   </div>
 </div>
 
 <div class="bug">
-  <div class="bug-head"><div class="bug-no">#2</div><div class="bug-title">Детектор судил по первому ходу</div></div>
+  <div class="bug-head"><div class="bug-no">#2</div><div class="bug-title">The detector judged by the first move</div></div>
   <div class="bug-body">
-    <div class="row"><dt>Симптом</dt><dd>17 скилов из 23 — нулевой отклик. Пробы кончаются подозрительно быстро (~10 сек).</dd></div>
-    <div class="row"><dt>Ложный след</dt><dd>«Скилы-правила в вакууме и не должны срабатывать».</dd></div>
-    <div class="row"><dt>Причина</dt><dd>Логика «первый инструмент решает» (тоже наследие апстрима): если модель первым ходом составила план или полезла в файлы — проба мгновенно записывалась в «не сработал», <b>хотя скил вызывался вторым ходом</b>. Вопросы-знания («как устроено X») выживали — там скил идёт первым; вопросы-действия («сделай Y») гибли все.</dd></div>
-    <div class="row"><dt>Фикс</dt><dd>Смотреть весь диалог пробы до финального события; в код вшит комментарий-предохранитель с описанием инцидента:
-<pre><code><span class="dim"># было: первый "чужой" инструмент = приговор</span>
+    <div class="row"><dt>Symptom</dt><dd>17 skills out of 23 — zero recall. Probes finish suspiciously fast (~10 sec).</dd></div>
+    <div class="row"><dt>False lead</dt><dd>"Rule-type skills just don't fire in a vacuum."</dd></div>
+    <div class="row"><dt>Cause</dt><dd>"First tool decides" logic (also inherited from upstream): if the model's first move was drafting a plan or opening files, the probe was instantly recorded as "didn't fire" — <b>even though the skill was invoked on the second move</b>. Knowledge questions ("how does X work") survived — the skill comes first there; action requests ("do Y") all died.</dd></div>
+    <div class="row"><dt>Fix</dt><dd>Watch the probe's whole conversation to the final event; a tripwire comment describing the incident is baked into the code:
+<pre><code><span class="dim"># before: the first "foreign" tool is a verdict</span>
 <span class="bad">if cb.get("name") in ("Skill", "Read"):
     pending_tool = True
 else:
-    return False        # план/ls первым ходом — и проба убита</span>
-<span class="dim"># стало: следим за каждым tool_use до события result</span>
+    return False        # a plan/ls as the first move kills the probe</span>
+<span class="dim"># after: track every tool_use until the result event</span>
 <span class="good">is_probe_tool = cb.get("name") in ("Skill", "Read")
 pending_tool, accumulated = is_probe_tool, ""
 # Do NOT restore upstream's first-tool-decides shortcut:
 # ...misscored 17 skills as 0-recall (2026-07-04 incident)</span></code></pre></dd></div>
-    <div class="row"><dt>Чек</dt><dd>Юнит-тест на синтетическом потоке: план первым ходом, скил вторым → «сработал».</dd></div>
+    <div class="row"><dt>Check</dt><dd>A unit test on a synthetic stream: plan as the first move, skill as the second → "fired."</dd></div>
   </div>
 </div>
 
 <div class="bug">
-  <div class="bug-head"><div class="bug-no">#3</div><div class="bug-title">В песочнице сидел близнец</div></div>
+  <div class="bug-head"><div class="bug-no">#3</div><div class="bug-title">A twin was sitting in the sandbox</div></div>
   <div class="bug-body">
-    <div class="row"><dt>Симптом</dt><dd>Детектор чинён, у старых скилов всё равно ноль — а у двух почему-то здоровые 92–94%.</dd></div>
-    <div class="row"><dt>Ложный след</dt><dd>«Ну значит описания и правда слабые».</dd></div>
-    <div class="row"><dt>Причина</dt><dd>Пробы гоняются в «пустой» временной папке, но <b>глобальные плагины грузятся везде</b>. Модель видела два одинаковых скила — настоящий из маркетплейса и пробу-копию — и вызывала настоящий. Проба «промахивалась». Улика-жемчужина: здоровыми оказались ровно те два скила, у которых <b>нет глобального зеркала</b>. Заметьте эхо: это та же двойная загрузка, с которой начался весь аудит — она пришла отравить и измерения.</dd></div>
-    <div class="row"><dt>Фикс</dt><dd>Песочница пишет собственный <code>.claude/settings.json</code>, глуша плагины всех маркетплейсов из локального кэша. Финальная философия изоляции: <b>«прод как есть, минус двойники»</b> — хуки, глобальный контекст, MCP-серверы живут, ведь в реальности описание борется за внимание модели именно в этом шуме.
+    <div class="row"><dt>Symptom</dt><dd>Detector fixed, old skills still at zero — while two of them somehow score a healthy 92–94%.</dd></div>
+    <div class="row"><dt>False lead</dt><dd>"So the descriptions really are weak."</dd></div>
+    <div class="row"><dt>Cause</dt><dd>Probes run in an "empty" temp folder, but <b>globally-enabled plugins load everywhere</b>. The model saw two identical skills — the real one from the marketplace and the probe copy — and invoked the real one. The probe "missed." The pearl of evidence: the two healthy skills were exactly the ones with <b>no global mirror</b>. Note the echo: this is the same double-loading that started the whole audit — it came back to poison the measurements too.</dd></div>
+    <div class="row"><dt>Fix</dt><dd>The sandbox writes its own <code>.claude/settings.json</code>, disabling every plugin from every marketplace in the local cache. The final isolation philosophy: <b>"production as is, minus the twins"</b> — hooks, global context and MCP servers stay alive, because in reality a description fights for the model's attention in exactly that noise.
 <pre><code><span class="good">Path(sandbox, ".claude", "settings.json").write_text(json.dumps({
     "enabledPlugins": {p: False for p in _all_known_plugins()},
 }))
-<span class="dim"># _all_known_plugins() перечисляет ~/.claude/plugins/cache/*/*
-# — источник-независимо: плагин, включённый на ЛЮБОМ уровне,
-#   в песочнице мёртв</span></span></code></pre></dd></div>
-    <div class="row"><dt>Чек</dt><dd>Скил с нулём ожил: train 12/12, тест 5/6.</dd></div>
+<span class="dim"># _all_known_plugins() enumerates ~/.claude/plugins/cache/*/*
+# — source-independent: a plugin enabled at ANY level
+#   is dead inside the sandbox</span></span></code></pre></dd></div>
+    <div class="row"><dt>Check</dt><dd>A zero-recall skill came back to life: train 12/12, test 5/6.</dd></div>
   </div>
 </div>
 
 <div class="bug">
-  <div class="bug-head"><div class="bug-no">#4</div><div class="bug-title">Правка под колёсами</div></div>
+  <div class="bug-head"><div class="bug-no">#4</div><div class="bug-title">Editing under the wheels</div></div>
   <div class="bug-body">
-    <div class="row"><dt>Симптом</dt><dd>Повторный прогон флота — снова нули у всех, даже у вчера здоровых. 23 скила «проверились» за 12 минут.</dd></div>
-    <div class="row"><dt>Ложный след</dt><dd>«Квота задушила».</dd></div>
-    <div class="row"><dt>Причина</dt><dd>Прямо во время прогона агент усиливал изоляцию и <b>переименовал функцию, не обновив место вызова</b>. Каждая проба падала с ошибкой имени и молча записывалась в «не сработал». Недоделанная правка хуже отсутствующей.
-<pre><code><span class="good">def _all_known_plugins():          # переименовал...</span>
-<span class="bad">{p: False for p in _user_enabled_plugins()}  # ...а вызов остался
-                                   # NameError в каждой пробе</span></code></pre></dd></div>
-    <div class="row"><dt>Фикс</dt><dd>Однострочный. Правило навсегда: <b>работающий конвейер не редактируют</b>; прерванную правку — откатить или довести до юнит-теста прежде, чем что-либо запускать поверх.</dd></div>
-    <div class="row"><dt>Чек</dt><dd>Контрольный скил вернулся к своим цифрам: train 24/24.</dd></div>
+    <div class="row"><dt>Symptom</dt><dd>A fleet re-run — zeros for everyone again, even yesterday's healthy ones. 23 skills "checked" in 12 minutes.</dd></div>
+    <div class="row"><dt>False lead</dt><dd>"The quota choked it."</dd></div>
+    <div class="row"><dt>Cause</dt><dd>Right in the middle of the run, the agent was hardening the isolation and <b>renamed a function without updating the call site</b>. Every probe died with a NameError and was silently recorded as "didn't fire." A half-finished edit is worse than no edit.
+<pre><code><span class="good">def _all_known_plugins():          # renamed...</span>
+<span class="bad">{p: False for p in _user_enabled_plugins()}  # ...call site left behind
+                                   # NameError in every probe</span></code></pre></dd></div>
+    <div class="row"><dt>Fix</dt><dd>One line. The rule, forever: <b>you don't edit a running pipeline</b>; an interrupted edit gets reverted or finished to a passing unit test before anything runs on top of it.</dd></div>
+    <div class="row"><dt>Check</dt><dd>The control skill returned to its numbers: train 24/24.</dd></div>
   </div>
 </div>
 
 <div class="bug">
-  <div class="bug-head"><div class="bug-no">#5</div><div class="bug-title">Ошибка пробы маскировалась под «не сработал»</div></div>
+  <div class="bug-head"><div class="bug-no">#5</div><div class="bug-title">A probe failure masqueraded as "didn't fire"</div></div>
   <div class="bug-body">
-    <div class="row"><dt>Симптом</dt><dd>Третий прогон: первые 12 скилов очереди — живые пёстрые цифры, все с 13-го — ровные нули. По логу видно: до границы скил проверялся ~2 минуты, после — по 10 секунд.</dd></div>
-    <div class="row"><dt>Ложный след</dt><dd>«Скилы одного домена хуже остальных» (нули пришлись ровно на одну группу).</dd></div>
-    <div class="row"><dt>Причина</dt><dd>После ~25 минут непрерывных проб API начал отбивать запросы всплесковым рейт-лимитом. А в линейке <b>ошибка пробы была неотличима от честного «скил не сработал»</b> — отбитые пробы молча падали в нули.</dd></div>
-    <div class="row"><dt>Фикс</dt><dd>Класс ошибок пробы: API-сбой → ретрай с паузами, после третьего провала — громкая пометка, но никогда — тихий ноль. Плюс паузы между скилами в очереди.
+    <div class="row"><dt>Symptom</dt><dd>Third run: the first 12 skills in the queue — lively, varied numbers; everything from #13 on — flat zeros. The log shows it: before the boundary a skill took ~2 minutes, after — 10 seconds each.</dd></div>
+    <div class="row"><dt>False lead</dt><dd>"Skills from one domain are worse than the rest" (the zeros landed exactly on one group).</dd></div>
+    <div class="row"><dt>Cause</dt><dd>After ~25 minutes of non-stop probing, the API started rejecting requests with a burst rate limit. And in the measuring stick, <b>a probe failure was indistinguishable from an honest "the skill didn't fire"</b> — rejected probes silently fell into the zeros.</dd></div>
+    <div class="row"><dt>Fix</dt><dd>A probe-error class: API failure → retry with pauses; after the third failure — a loud flag, but never a silent zero. Plus pauses between skills in the queue.
 <pre><code><span class="good">if event.get("is_error") or subtype != "success":
-    raise ProbeError(...)   # сбой API — НЕ «скил не сработал»
+    raise ProbeError(...)   # an API failure is NOT "didn't fire"
 
-for attempt, pause in enumerate((0, 20, 60)):   # ретраи
+for attempt, pause in enumerate((0, 20, 60)):   # retries
     ...
 print("UNRELIABLE RESULT: N probe(s) errored after retries")</span></code></pre></dd></div>
-    <div class="row"><dt>Чек</dt><dd>Юнит-тест: «результат-ошибка» от API поднимает исключение, а не возвращает False. Убитые 11 скилов поставлены на пересъём после сброса квоты.</dd></div>
+    <div class="row"><dt>Check</dt><dd>Unit test: an error result from the API raises an exception instead of returning False. The 11 killed skills were queued for a re-shoot after the quota reset.</dd></div>
   </div>
 </div>
 
 <div class="callout red">
-  <b>Мораль всех пяти:</b> ни один баг не был найден «чтением кода». Все нашлись одинаково — цифры
-  выглядели <i>слишком ровно</i>, и я шёл проверять один случай руками. Недоверие к собственным
-  результатам — это не паранойя, это часть инструмента. И вторая мораль: четыре бага из пяти жили там,
-  где агент «упростил» или недоделал; код Anthropic, взятый как есть, не подвёл ни разу.
+  <b>The moral of all five:</b> not one bug was found by "reading the code." All were found the same way —
+  the numbers looked <i>too even</i>, and I went to hand-check a single case. Distrusting your own results
+  isn't paranoia; it's part of the instrument. And the second moral: four bugs out of five lived where the
+  agent had "simplified" or half-finished something; Anthropic's code, taken as is, never failed once.
 </div>
 
-<h2 id="s05"><span class="idx">05</span>Что показала честная линейка</h2>
-<p>Первый полный цикл — на новорождённом скиле <code>meta:model-routing</code> (том самом, из аварии с 240 агентами):</p>
+<h2 id="s05"><span class="idx">05</span>What an honest stick showed</h2>
+<p>The first full cycle — on the newborn <code>meta:model-routing</code> skill (the one born from the 240-agent incident):</p>
 <div class="kpis">
-  <div class="kpi"><div class="v bad">56%</div><div class="l">отклик исходного описания</div></div>
-  <div class="kpi"><div class="v">94%</div><div class="l">после одного витка улучшателя</div></div>
-  <div class="kpi"><div class="v">0</div><div class="l">ложных срабатываний до и после</div></div>
+  <div class="kpi"><div class="v bad">56%</div><div class="l">recall of the original description</div></div>
+  <div class="kpi"><div class="v">94%</div><div class="l">after one improver iteration</div></div>
+  <div class="kpi"><div class="v">0</div><div class="l">false fires before and after</div></div>
 </div>
-<p>Улучшатель Anthropic сделал главное правильно: он <b>не зазубрил</b> проваленные вопросы, а обобщил
-намерение — вписал в описание сами ситуации, и скил стал ловить формулировки, которых в обучающем
-наборе не было:</p>
-<pre><code><span class="dim"># до</span>
+<p>Anthropic's improver did the key thing right: it <b>didn't memorize</b> the failed questions — it
+generalized the intent, writing the situations themselves into the description, and the skill started
+catching phrasings that were never in the training set:</p>
+<pre><code><span class="dim"># before</span>
 <span class="bad">Use whenever spawning subagents or authoring a Workflow script…</span>
-<span class="dim"># после (фрагмент)</span>
+<span class="dim"># after (excerpt)</span>
 <span class="good">…ANY multi-agent work, not just when models are mentioned.
 Triggers: "spawn/kick off subagents", "a bunch of agents in parallel",
 fleets that audit/comb/sweep/hunt across files, loop-until-done runs…</span></code></pre>
-<p>А первый честный триаж флота (та половина, что успела промериться до бага #5) сразу дал рабочую
-картину: пятёрка здоровых с откликом 83–94% при нуле ложных, и очередь кандидатов на лечение — у кого
-описание «пересказывает содержимое» вместо «когда меня звать». Ровно то знание, ради которого всё
-затевалось: <b>теперь известно, что чинить и в каком порядке</b>.</p>
+<p>And the first honest fleet triage (the half that got measured before bug #5) immediately painted a
+working picture: a healthy five with 83–94% recall at zero false fires, and a treatment queue of skills
+whose descriptions "retell the contents" instead of saying "when to call me." Exactly the knowledge the
+whole thing was started for: <b>now I know what to fix and in what order</b>.</p>
 
-<h2 id="s06"><span class="idx">06</span>Бест-практис Anthropic, забранные себе</h2>
+<h2 id="s06"><span class="idx">06</span>Anthropic best practices I adopted</h2>
 <div class="tablebox"><table>
-  <tr><th>Практика</th><th>Суть</th></tr>
-  <tr><td>Train/test-сплит</td><td>60% вопросов — улучшателю, 40% — спрятать. Победителя выбирать только по спрятанным: иначе получишь описание, заточенное под экзаменационные билеты.</td></tr>
-  <tr><td>Негативы = «почти-попадания»</td><td>Молчание скила проверять на вопросах, которые <i>делят с ним ключевые слова</i>, но принадлежат соседу. «Напиши функцию Фибоначчи» для PDF-скила не проверяет ничего.</td></tr>
-  <tr><td>Реалистичные вопросы</td><td>С путями файлов, именами компонентов, ленью и опечатками — как пишут живые люди, а не как формулируют ТЗ.</td></tr>
-  <tr><td>Описание = «когда», не «что»</td><td>Модель читает описание, решая, открывать ли скил. Пересказ содержимого — вредная трата места; нужны условия срабатывания, и понахальнее.</td></tr>
-  <tr><td>Обобщать, не перечислять</td><td>Улучшая описание по провалам, запрещено превращать его в список конкретных вопросов — иначе распухание и переобучение.</td></tr>
-  <tr><td>Таблицы рационализаций</td><td>В скилах-правилах: колонка «мысль, которой ты себя оправдаешь» → колонка «реальность». Ловит срезание углов лучше десяти «НЕЛЬЗЯ».</td></tr>
-  <tr><td>Progressive disclosure</td><td>Короткий скил + глубина в подпапке references, загружаемой по требованию — длинные простыни не сидят в контексте зря.</td></tr>
+  <tr><th>Practice</th><th>The gist</th></tr>
+  <tr><td>Train/test split</td><td>60% of the questions go to the improver, 40% get hidden. Pick the winner only by the hidden ones — otherwise you get a description tuned to the exam questions.</td></tr>
+  <tr><td>Negatives = near-misses</td><td>Test a skill's silence on questions that <i>share its keywords</i> but belong to a neighbor. "Write a Fibonacci function" as a negative for a PDF skill tests nothing.</td></tr>
+  <tr><td>Realistic questions</td><td>With file paths, component names, laziness and typos — the way real people type, not the way specs are worded.</td></tr>
+  <tr><td>Description = "when," not "what"</td><td>The model reads the description to decide whether to open the skill. Retelling the contents is wasted space; you need firing conditions, and pushy ones.</td></tr>
+  <tr><td>Generalize, don't enumerate</td><td>When improving a description from its failures, turning it into a list of specific questions is forbidden — that's bloat and overfitting.</td></tr>
+  <tr><td>Rationalization tables</td><td>In rule-type skills: a column "the thought you'll excuse yourself with" → a column "reality." Catches corner-cutting better than ten ALL-CAPS "NEVER"s.</td></tr>
+  <tr><td>Progressive disclosure</td><td>A short skill + depth in a references/ subfolder loaded on demand — long walls of text don't sit in context for nothing.</td></tr>
 </table></div>
 
-<h2 id="s07"><span class="idx">07</span>Протокол на будущее</h2>
-<h3>Деньги и масштаб</h3>
+<h2 id="s07"><span class="idx">07</span>The protocol going forward</h2>
+<h3>Money and scale</h3>
 <ul>
-  <li><b>Замерь один — потом умножай.</b> Перед любым массовым запуском прогоняется одна единица с реальным счётчиком токенов. Оценки «на глаз» запрещены: одна такая в этот день промахнулась втрое.</li>
-  <li><b>Проценты, не деньги.</b> Масштаб подаётся таблицей: токены по типам × количество × <b>доля 5-часового окна квоты</b>. «Съест четверть окна» информативнее любой суммы.</li>
-  <li><b>Новому скилу — полный цикл сразу</b> (родился — сразу откалиброван, трата разовая). Массовая проверка старых — дешёвый триаж всем, лечебный цикл только провалившим.</li>
+  <li><b>Measure one, then multiply.</b> Before any mass launch, run a single unit with a real token counter. Gut estimates are banned: one of them missed by 3× that very day.</li>
+  <li><b>Percentages, not money.</b> Scale is presented as a table: tokens by type × count × <b>share of the 5-hour quota window</b>. "Eats a quarter of the window" beats any price tag.</li>
+  <li><b>A new skill gets the full cycle immediately</b> (born calibrated, a one-off cost). Mass-checking old ones — a cheap triage for all, the treatment loop only for the failures.</li>
 </ul>
-<h3>Гигиена измерений</h3>
+<h3>Measurement hygiene</h3>
 <ul>
-  <li>Валидируй линейку на случае, <b>репрезентативном рабочей нагрузке</b>: моя прошла проверку на новом скиле — и молча врала про старые, у которых были двойники.</li>
-  <li><b>Инвентаризуй среду</b>: один отладочный вывод «что реально видит модель в песочнице» нашёл бы близнецов в первый час.</li>
-  <li><b>Ошибка измерения ≠ отрицательный результат.</b> Сбой пробы должен кричать, а не тихо записываться в нули — иначе рейт-лимит выглядит как «половина скилов сломалась».</li>
-  <li>Подозрительно ровные цифры — сигнал проверить один случай руками, прежде чем строить теории.</li>
-  <li>Работающий конвейер не редактируют.</li>
+  <li>Validate your measuring stick on a case <b>representative of the real workload</b>: mine passed its check on a new skill — and silently lied about the old ones, which had twins.</li>
+  <li><b>Inventory the environment</b>: a single debug print of "what does the model actually see in the sandbox" would have found the twins within the first hour.</li>
+  <li><b>A measurement error ≠ a negative result.</b> A probe failure must scream, not quietly land in the zeros — otherwise a rate limit looks like "half the skills are broken."</li>
+  <li>Suspiciously even numbers are a signal to hand-check one case before building theories.</li>
+  <li>You don't edit a running pipeline.</li>
 </ul>
-<h3>Стражи вместо дисциплины</h3>
-<p>За день дисциплина агента подводила не раз: то модель субагентам забыл указать, то правку оставил
-недоделанной. Каждый такой случай закрыт хуком, который проверяет сам и блокирует с объяснением —
-и новые стражи в первый же час поймали за руку самого агента, который их и написал. Значит, стоят где надо.</p>
+<h3>Guards instead of discipline</h3>
+<p>Over the day the agent's discipline slipped more than once: forgot to set a model for subagents,
+left an edit half-finished. Every such case is now closed by a hook that checks by itself and blocks
+with an explanation — and the new guards caught the very agent that wrote them within their first hour.
+Which means they stand exactly where they should.</p>
 
-<h2 id="s08"><span class="idx">08</span>Хронология — одним взглядом</h2>
+<h2 id="s08"><span class="idx">08</span>Timeline at a glance</h2>
 <ul class="timeline">
-  <li><span class="t">день 1</span>Токен-аудит: скилы грузятся дважды, CLAUDE.md раздут, 40+ скилов без единого eval → план консолидации, ревьюеры, ужимание.</li>
-  <li><span class="t">день 2</span>Свой скорер всем даёт 5.0 → «а нет ли готового у Anthropic?» → о чудо — есть → гибрид.</li>
-  <li><span class="t">утро</span>Баг #1 (парсер «&gt;»): все прежние замеры — брак.</li>
-  <li><span class="t">день</span>Авария 240 агентов → скил model-routing + хук-страж + ярусы моделей.</li>
-  <li><span class="t">день</span>Adversarial-ревью гибрида: 12 реальных дефектов, почти все — в местах «упрощения» кода Anthropic.</li>
-  <li><span class="t">день</span>Полный цикл на model-routing: 56% → 94% при нуле ложных.</li>
-  <li><span class="t">вечер</span>Баги #2–#4: первый ход, близнецы, правка под колёсами — линейка уличена и чинена трижды.</li>
-  <li><span class="t">вечер</span>19 querysets сгенерированы агентами за 100 секунд; триаж флота: 5 здоровых, очередь на лечение сформирована.</li>
-  <li><span class="t">вечер</span>Баг #5 (рейт-лимит под маской нулей) → пробы научились отличать свой сбой от чужого молчания.</li>
+  <li><span class="t">day 1</span>Token audit: skills load twice, CLAUDE.md is bloated, 40+ skills without a single eval → consolidation plan, reviewers, slimming.</li>
+  <li><span class="t">day 2</span>My own scorer gives everyone 5.0 → "doesn't Anthropic have this already?" → oh, wow — they do → the hybrid.</li>
+  <li><span class="t">morning</span>Bug #1 (the "&gt;" parser): all previous measurements are scrap.</li>
+  <li><span class="t">midday</span>The 240-agent incident → the model-routing skill + guard hook + model tiers.</li>
+  <li><span class="t">midday</span>Adversarial review of the hybrid: 12 real defects, almost all in places where Anthropic's code had been "simplified."</li>
+  <li><span class="t">midday</span>Full cycle on model-routing: 56% → 94% with zero false fires.</li>
+  <li><span class="t">evening</span>Bugs #2–#4: first move, twins, editing under the wheels — the stick caught lying and fixed three times.</li>
+  <li><span class="t">evening</span>19 querysets generated by agents in 100 seconds; fleet triage: 5 healthy, a treatment queue formed.</li>
+  <li><span class="t">evening</span>Bug #5 (a rate limit wearing a zero mask) → probes learned to tell their own failure from someone else's silence.</li>
 </ul>
 
 <footer>
-  Многие скилы и практики из этой статьи живут в моём репозитории:
+  Many of the skills and practices from this article live in my repository:
   <a href="https://github.com/Xaaalera/claude-skills">github.com/Xaaalera/claude-skills</a> ·
-  Инструмент: scripts/optimize_description.py · Querysets: <code>plugins/*/skills/*/evals/trigger-eval.json</code> ·
-  Экономика: 1 проба ≈ 0.1–0.15% пятичасового окна квоты
+  Tool: scripts/optimize_description.py · Querysets: <code>plugins/*/skills/*/evals/trigger-eval.json</code> ·
+  Economics: 1 probe ≈ 0.1–0.15% of a 5-hour quota window
 </footer>
 </div>
 <div class="ruler"></div>
+</body>
+</html>
