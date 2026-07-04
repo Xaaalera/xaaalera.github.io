@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>xaaalera · инженерный журнал</title>
+<meta name="description" content="Расследования, аварии и протоколы из жизни с Claude: скилы, агенты, токены — с уликами и цифрами.">
+<style>
+  :root{
+    --paper:#0f191b; --card:#182a2e; --panel:#121e21;
+    --ink:#e6efec; --ink-soft:#98adaa; --grid:#1c2b2e; --line:#243639;
+    --teal:#5fd0c0; --teal-soft:#12302d; --stamp:#ff8f7a;
+    --mono:"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,"Helvetica Neue",Arial,sans-serif;
+  }
+  body{
+    background:var(--paper);
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:32px 32px;
+    color:var(--ink); font-family:var(--sans); line-height:1.65; margin:0;
+  }
+  .ruler{height:14px;background:repeating-linear-gradient(90deg,var(--teal) 0 1px,transparent 1px 10px);opacity:.4}
+  .wrap{max-width:880px;margin:48px auto 64px;padding:16px 48px 56px;background:var(--panel);
+        border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.35)}
+  header{padding:44px 0 10px}
+  .eyebrow{font-family:var(--mono);font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--teal)}
+  h1{font-size:clamp(30px,5vw,44px);line-height:1.1;margin:.3em 0 .25em;letter-spacing:-.015em}
+  .sub{color:var(--ink-soft);font-size:17px;max-width:58ch}
+  .post{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;
+        padding:20px 24px;margin:26px 0;text-decoration:none;color:var(--ink);
+        transition:border-color .15s}
+  .post:hover{border-color:var(--teal)}
+  .post .date{font-family:var(--mono);font-size:12.5px;color:var(--teal);letter-spacing:.08em}
+  .post h2{margin:.25em 0 .3em;font-size:22px;letter-spacing:-.01em}
+  .post p{margin:0;color:var(--ink-soft);font-size:15.5px}
+  .post .tags{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+  .tag{font-family:var(--mono);font-size:11.5px;color:var(--teal);background:var(--teal-soft);
+       border:1px solid var(--line);border-radius:4px;padding:2px 8px}
+  footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);
+         font-family:var(--mono);font-size:12.5px;color:var(--ink-soft)}
+  footer a{color:var(--teal)}
+  @media (max-width:640px){.wrap{margin:12px auto;padding:8px 20px 44px;border-radius:10px}}
+</style>
+</head>
+<body>
+<div class="ruler"></div>
+<div class="wrap">
+<header>
+  <div class="eyebrow">xaaalera</div>
+  <h1>Инженерный журнал</h1>
+  <p class="sub">Расследования, аварии и протоколы из жизни с Claude: скилы, агенты, токены.
+  Всё по-настоящему — с уликами, цифрами и пойманными багами.</p>
+</header>
+
+<a class="post" href="posts/2026-07-skill-evals.html">
+  <div class="date">2026-07-04</div>
+  <h2>Скилы Claude: доверяй, но замеряй</h2>
+  <p>Началось с вопроса «куда утекают токены?» — кончилось eval-конвейером на инструментах Anthropic,
+  пятью багами измерительной линейки, аварией на 240 агентов и хуками-стражами вместо самодисциплины.</p>
+  <div class="tags"><span class="tag">skills</span><span class="tag">evals</span><span class="tag">anthropic</span><span class="tag">post-mortem</span></div>
+</a>
+
+<footer>
+  Скилы и инструменты из статей: <a href="https://github.com/Xaaalera/claude-skills">github.com/Xaaalera/claude-skills</a>
+</footer>
+</div>
+<div class="ruler"></div>
+</body>
+</html>
